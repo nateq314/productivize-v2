@@ -1,15 +1,20 @@
 import React from "react";
 import styled from "styled-components";
+import AppBar from "./AppBar";
+import AppContent from "./AppContent";
 
-const StyledMain = styled.div``;
+const StyledMain = styled.div`
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 50px auto;
+  grid-template-areas: "appbar" "app_content";
+`;
 
 export default function Main() {
-  return <StyledMain>Main Content Will Go Here</StyledMain>;
-  // <Query query={LISTS_QUERY}>
-  //   {({ loading, error, data }) => {
-  //     if (loading) return "Loading...";
-  //     if (error) return `Error! ${error.message}`;
-  //     return JSON.stringify(data.lists);
-  //   }}
-  // </Query>
+  return (
+    <StyledMain>
+      <AppBar />
+      <AppContent />
+    </StyledMain>
+  );
 }

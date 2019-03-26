@@ -6,6 +6,7 @@ import { UserContext } from "../pages/_app";
 
 const StyledAppBar = styled.header`
   background-color: rgba(255, 255, 255, 0.1);
+  grid-area: appbar;
 `;
 
 export default function AppBar() {
