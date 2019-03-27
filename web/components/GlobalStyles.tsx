@@ -4,7 +4,7 @@ const GlobalStyles = createGlobalStyle`
   @import url("https://fonts.googleapis.com/css?family=Open+Sans");
 
   body {
-    background-color: #1b1b1b;
+    background-color: #101010;
     color: #eee;
     text-align: center;
     font-family: "Open Sans", sans-serif;

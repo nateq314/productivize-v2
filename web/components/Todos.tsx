@@ -1,19 +1,20 @@
 import React from "react";
 import styled from "styled-components";
-import { Todo } from "./AppContent";
+import { Todo } from "./Main";
+import CreateNewTodo from "./CreateNewTodo";
 
 const StyledTodos = styled.section`
   grid-area: todos;
-  background-color: rgba(0, 255, 0, 0.1);
 `;
 
-interface TodoListsProps {
+interface TodosProps {
   todos: Todo[];
 }
 
-export default function Todos({ todos }: TodoListsProps) {
+export default function Todos({ todos }: TodosProps) {
   return (
     <StyledTodos>
+      <CreateNewTodo />
       <ul>
         {todos.map((todo) => {
           return <li key={todo.id}>{todo.content}</li>;

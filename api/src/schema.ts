@@ -20,18 +20,19 @@ const schema = gql`
     id: ID!
     name: String!
     order: Int!
-    todos: [Todo]!
-  }
-
-  type Mutation {
-    foo: Result
-    login(idToken: String, session: String): LoginResult!
-    logout: LoginResult!
+    todos: [Todo]
   }
 
   type LoginResult {
     error: String
     user: User
+  }
+
+  type Mutation {
+    createList(name: String!): List!
+    foo: Result
+    login(idToken: String, session: String): LoginResult!
+    logout: LoginResult!
   }
 
   type Query {

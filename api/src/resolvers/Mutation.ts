@@ -22,6 +22,35 @@ export default {
     };
   },
 
+  async createList(parent: any, args: any, ctx: Context, info: any) {
+    authorize(ctx);
+    try {
+      const currUserLists = await fbAdmin
+        .firestore()
+        .collection("lists")
+        .where("uid", "==", (ctx.user as fbAdmin.auth.DecodedIdToken).uid)
+        .get();
+      const newListDocument = await fbAdmin
+        .firestore()
+        .collection("lists")
+        .add({
+          name: args.name,
+          order: currUserLists.size + 1,
+          uid: (ctx.user as fbAdmin.auth.DecodedIdToken).uid
+        });
+      const newListDocSnapshot = await newListDocument.get();
+      const list = newListDocSnapshot.data();
+
+      if (list) {
+        return { ...list, id: newListDocument.id, todos: [] };
+      }
+    } catch (error) {
+      console.error(error);
+      return { error: error.message };
+    }
+    return { error: "List Creation Error" };
+  },
+
   async login(parent: any, args: ILogin, ctx: Context, info: any) {
     if (args.idToken && args.idToken !== "undefined") {
       // User just logged in via email/password and either
@@ -92,3 +121,7 @@ export default {
     };
   }
 };
+
+function authorize(ctx: Context) {
+  if (!ctx.user) ctx.res.status(401).send("UNAUTHORIZED REQUEST");
+}

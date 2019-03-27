@@ -3,7 +3,7 @@ import styled from "styled-components";
 
 const StyledTodoDetails = styled.section`
   grid-area: details;
-  background-color: rgba(0, 0, 255, 0.1);
+  border-left: 1px solid #333;
 `;
 
 export default function TodoDetails() {
