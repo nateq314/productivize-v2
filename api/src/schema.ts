@@ -4,6 +4,8 @@ export interface List {
   id: string;
   name: string;
   order: number;
+  uid: string;
+  todos: Todo[];
 }
 
 export interface Todo {
@@ -11,11 +13,16 @@ export interface Todo {
   completed: boolean;
   content: string;
   deadline?: number;
+  added_on?: number;
+  completed_on?: number;
+  description: string;
   important: boolean;
   order: number;
 }
 
 const schema = gql`
+  scalar DateTime
+
   type List {
     id: ID!
     name: String!
@@ -30,7 +37,17 @@ const schema = gql`
 
   type Mutation {
     createList(name: String!): List!
-    foo: Result
+    createTodo(content: String!, listId: String!): Todo!
+    deleteTodo(listId: String!, todoId: String!): Result!
+    updateTodo(
+      listId: String!
+      todoId: String!
+      completed: Boolean
+      content: String
+      deadline: DateTime
+      description: String
+      important: Boolean
+    ): Todo!
     login(idToken: String, session: String): LoginResult!
     logout: LoginResult!
   }
@@ -41,6 +58,7 @@ const schema = gql`
   }
 
   type Result {
+    success: Boolean!
     message: String
   }
 
@@ -49,10 +67,13 @@ const schema = gql`
   }
 
   type Todo {
+    added_on: DateTime!
     id: ID!
     completed: Boolean!
+    completed_on: DateTime
     content: String!
-    deadline: Int
+    deadline: DateTime
+    description: String!
     important: Boolean!
     order: Int!
   }

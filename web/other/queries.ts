@@ -10,6 +10,27 @@ export const FETCH_CURRENT_USER = gql`
   }
 `;
 
+export const FETCH_LIST = gql`
+  query FetchList($listId: String!) {
+    list(listId: $listId) {
+      id
+      name
+      order
+      todos {
+        id
+        added_on
+        content
+        completed
+        completed_on
+        deadline
+        description
+        important
+        order
+      }
+    }
+  }
+`;
+
 export const FETCH_LISTS = gql`
   query {
     lists {
@@ -18,19 +39,15 @@ export const FETCH_LISTS = gql`
       order
       todos {
         id
+        added_on
         content
+        completed
+        completed_on
+        deadline
+        description
+        important
+        order
       }
-    }
-  }
-`;
-
-export const FETCH_TODOS = gql`
-  query FetchTodos($listId: String!) {
-    todos(listId: $listId) {
-      id
-      content
-      important
-      completed
     }
   }
 `;
@@ -51,8 +68,61 @@ export const CREATE_LIST = gql`
       order
       todos {
         id
-        content
       }
+    }
+  }
+`;
+
+export const CREATE_TODO = gql`
+  mutation CreateTodo($content: String!, $listId: String!) {
+    createTodo(content: $content, listId: $listId) {
+      id
+      added_on
+      content
+      completed
+      completed_on
+      deadline
+      description
+      important
+      order
+    }
+  }
+`;
+
+export const DELETE_TODO = gql`
+  mutation DeleteTodo($listId: String!, $todoId: String!) {
+    deleteTodo(listId: $listId, todoId: $todoId) {
+      success
+    }
+  }
+`;
+
+export const UPDATE_TODO = gql`
+  mutation UpdateTodo(
+    $listId: String!
+    $todoId: String!
+    $completed: Boolean
+    $content: String
+    $description: String
+    $important: Boolean
+  ) {
+    updateTodo(
+      listId: $listId
+      todoId: $todoId
+      completed: $completed
+      content: $content
+      description: $description
+      important: $important
+    ) {
+      id
+      added_on
+      content
+      completed
+      completed_on
+      deadline
+      description
+      important
+      order
     }
   }
 `;

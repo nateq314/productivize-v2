@@ -26,7 +26,13 @@ export interface TodoList {
 
 export interface Todo {
   id: string;
+  added_on: Date;
+  completed: boolean;
+  completed_on: Date | null;
   content: string;
+  deadline: Date | null;
+  description: string;
+  important: boolean;
 }
 
 export default function Main() {
@@ -42,10 +48,6 @@ export default function Main() {
         if (loading) return "Loading...";
         if (error) return `Error! ${error.message}`;
 
-        // returned data actually contains the todos nested into each list.
-        // But we want to pass only the lists themselves to <TodoLists />,
-        // and only the todos for the currently selected list to <Todo />.
-        // So separate them out here.
         const lists: TodoList[] = (data as TodoListsQueryResult).lists;
 
         return (

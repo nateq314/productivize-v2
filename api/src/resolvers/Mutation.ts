@@ -1,4 +1,5 @@
 import * as fbAdmin from "firebase-admin";
+import { ForbiddenError } from "apollo-server-express";
 import * as express from "express";
 import { Context } from "../apolloServer";
 import {
@@ -7,7 +8,7 @@ import {
   createUserSessionToken,
   verifyUserSessionToken
 } from "../firebase";
-import { pubsub, SOMETHING_CHANGED_TOPIC } from "./Subscription";
+import { List } from "../schema";
 
 interface ILogin {
   idToken?: string;
@@ -15,12 +16,12 @@ interface ILogin {
 }
 
 export default {
-  foo() {
-    pubsub.publish(SOMETHING_CHANGED_TOPIC, { message: "hello" });
-    return {
-      message: "hello"
-    };
-  },
+  // foo() {
+  //   pubsub.publish(SOMETHING_CHANGED_TOPIC, { message: "hello" });
+  //   return {
+  //     message: "hello"
+  //   };
+  // },
 
   async createList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
@@ -49,6 +50,109 @@ export default {
       return { error: error.message };
     }
     return { error: "List Creation Error" };
+  },
+
+  async createTodo(parent: any, args: any, ctx: Context, info: any) {
+    authorize(ctx);
+    try {
+      const todosColRef = fbAdmin
+        .firestore()
+        .collection("lists")
+        .doc(args.listId)
+        .collection("todos");
+      const currTodosSnapshot = await todosColRef.get();
+      const newTodoDocRef = await todosColRef.add({
+        added_on: new Date(),
+        content: args.content,
+        completed: false,
+        // deadline: args.deadline,
+        description: "",
+        important: false,
+        order: currTodosSnapshot.size + 1
+      });
+      const newTodoDocSnapshot = await newTodoDocRef.get();
+      const newTodo = newTodoDocSnapshot.data();
+
+      if (newTodo) {
+        return {
+          ...newTodo,
+          id: newTodoDocRef.id
+        };
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    return { error: "Todo Creation Error" };
+  },
+
+  async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
+    authorize(ctx);
+    try {
+      const todoListDocRef = fbAdmin
+        .firestore()
+        .collection("lists")
+        .doc(args.listId);
+      const todoListDocSnapshot = await todoListDocRef.get();
+      if (
+        (todoListDocSnapshot.data() as List).uid !==
+        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
+      ) {
+        // TODO: test this
+        throw new ForbiddenError(
+          "Not authorized to touch anything in this list."
+        );
+      }
+      await todoListDocRef
+        .collection("todos")
+        .doc(args.todoId)
+        .delete();
+      return { success: true };
+    } catch (error) {
+      console.error(error);
+    }
+    return { error: "Todo Deletion Error" };
+  },
+
+  async updateTodo(parent: any, args: any, ctx: Context, info: any) {
+    // TODO: see if this can be merged with createTodo(), since Firestore's
+    // set() method handles both creation and updating.
+    authorize(ctx);
+    try {
+      const todoListDocRef = fbAdmin
+        .firestore()
+        .collection("lists")
+        .doc(args.listId);
+      const todoListDocSnapshot = await todoListDocRef.get();
+      if (
+        (todoListDocSnapshot.data() as List).uid !==
+        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
+      ) {
+        // TODO: test this
+        throw new ForbiddenError(
+          "Not authorized to touch anything in this list."
+        );
+      }
+      const { content, deadline, description } = args;
+      const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
+      const updates: any = {};
+      // TODO: find a better way to do this
+      if (args.hasOwnProperty("completed")) updates.completed = args.completed;
+      if (content) updates.content = content;
+      if (deadline) updates.deadline = deadline;
+      if (description) updates.description = description;
+      if (args.hasOwnProperty("important")) updates.important = args.important;
+      await todoDocRef.update(updates);
+      const updatedTodo = await todoDocRef.get();
+      const returnValue = {
+        ...updatedTodo.data(),
+        id: todoDocRef.id
+      };
+      console.log("return value:", returnValue);
+      return returnValue;
+    } catch (error) {
+      console.error(error);
+    }
+    return { error: "Todo Update Error" };
   },
 
   async login(parent: any, args: ILogin, ctx: Context, info: any) {

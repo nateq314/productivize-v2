@@ -21,19 +21,34 @@ export default function AppContent({
   lists,
   toggleNewListModal
 }: AppContentProps) {
-  const [selectedList, setSelectedList] = useState(lists[0].id);
-  const { todos } = lists.find((list) => selectedList === list.id) as TodoList;
+  const [selectedListId, setSelectedListId] = useState(lists[0].id);
+  const [selectedTodoId, setSelectedTodoId] = useState<string | undefined>();
+  const selectedList = lists.find(
+    (list) => selectedListId === list.id
+  ) as TodoList;
+  const { todos } = selectedList;
 
   return (
     <StyledAppContent>
       <TodoLists
         lists={lists}
         toggleNewListModal={toggleNewListModal}
-        selectedList={selectedList}
-        setSelectedList={setSelectedList}
+        selectedList={selectedListId}
+        setSelectedList={setSelectedListId}
       />
-      <Todos todos={todos} />
-      <TodoDetails />
+      <Todos
+        todos={todos}
+        selectedList={selectedList}
+        selectedTodoId={selectedTodoId}
+        setSelectedTodoId={setSelectedTodoId}
+      />
+      <TodoDetails
+        todo={
+          selectedTodoId
+            ? todos.find((t) => t.id === selectedTodoId)
+            : undefined
+        }
+      />
     </StyledAppContent>
   );
 }
