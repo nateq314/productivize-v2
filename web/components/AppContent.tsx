@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { TodoList } from "./Main";
+import { Todo, TodoList } from "./Main";
 import TodoLists from "./TodoLists";
 import Todos from "./Todos";
 import TodoDetails from "./TodoDetails";
@@ -17,10 +17,8 @@ interface AppContentProps {
   toggleNewListModal: () => void;
 }
 
-export default function AppContent({
-  lists,
-  toggleNewListModal
-}: AppContentProps) {
+export default function AppContent(props: AppContentProps) {
+  const { lists, toggleNewListModal } = props;
   const [selectedListId, setSelectedListId] = useState(lists[0].id);
   const [selectedTodoId, setSelectedTodoId] = useState<string | undefined>();
   const selectedList = lists.find(
@@ -42,13 +40,12 @@ export default function AppContent({
         selectedTodoId={selectedTodoId}
         setSelectedTodoId={setSelectedTodoId}
       />
-      <TodoDetails
-        todo={
-          selectedTodoId
-            ? todos.find((t) => t.id === selectedTodoId)
-            : undefined
-        }
-      />
+      {selectedTodoId && (
+        <TodoDetails
+          selectedList={selectedList}
+          todo={todos.find((t) => t.id === selectedTodoId) as Todo}
+        />
+      )}
     </StyledAppContent>
   );
 }

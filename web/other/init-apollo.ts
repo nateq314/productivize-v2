@@ -33,28 +33,6 @@ function create(initialState: any, linkOptions: HttpLink.Options) {
     ssrMode: !isBrowser,
     link: httpLink,
     cache: new InMemoryCache().restore(initialState || {})
-    // resolvers: {
-    //   Query: {
-    //     list: (_root, variables, { cache, getCacheKey }) => {
-    //       const cacheKey = getCacheKey({ __typename: 'List', id: variables.listId });
-    //       const fragmentQuery = gql`
-    //         fragment list on List {
-    //           id
-    //           name
-    //           order
-    //           todos {
-    //             id
-    //             content
-    //             completed
-    //             important
-    //             order
-    //           }
-    //         }
-    //       `;
-
-    //     }
-    //   }
-    // }
   });
 }
 

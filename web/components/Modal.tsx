@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import styled from "styled-components";
+import { useEscapeKeyListener, useClickAwayListener } from "../effects";
 
 const StyledModal = styled.div`
   position: fixed;
@@ -42,7 +43,8 @@ export default function Modal({
   visible
 }: ModalProps) {
   const dialog = useRef<HTMLDivElement>(null);
-  useModalListeners(visible, setVisibility, dialog);
+  useEscapeKeyListener(visible, setVisibility);
+  useClickAwayListener(visible, setVisibility, dialog);
 
   return (
     <StyledModal className={`Modal ${visible ? "visible" : ""}`}>
@@ -51,57 +53,4 @@ export default function Modal({
       </div>
     </StyledModal>
   );
-}
-
-function useModalListeners(
-  visible: boolean,
-  setVisibility: React.Dispatch<React.SetStateAction<boolean>>,
-  avoidCloseClickRegion: React.RefObject<HTMLDivElement>
-) {
-  const closeModalKeyboardEventListener = (e: KeyboardEvent) => {
-    if (e.key == "Escape") {
-      setVisibility(false);
-    }
-  };
-
-  const closeModalMouseEventListener = (e: MouseEvent) => {
-    const className = (e.target as Element).className;
-    if (!className.includes("Modal ")) {
-      e.stopPropagation();
-      return;
-    }
-    setVisibility(false);
-  };
-
-  useEffect(() => {
-    if (visible) {
-      document.addEventListener(
-        "keydown",
-        closeModalKeyboardEventListener,
-        false
-      );
-      document.addEventListener(
-        "mousedown",
-        closeModalMouseEventListener,
-        false
-      );
-      (avoidCloseClickRegion.current as HTMLDivElement).addEventListener(
-        "mousedown",
-        closeModalMouseEventListener,
-        false
-      );
-    }
-    return () => {
-      document.removeEventListener(
-        "keydown",
-        closeModalKeyboardEventListener,
-        false
-      );
-      document.removeEventListener("mousedown", closeModalMouseEventListener);
-      (avoidCloseClickRegion.current as HTMLDivElement).removeEventListener(
-        "mousedown",
-        closeModalMouseEventListener
-      );
-    };
-  }, [visible]);
 }

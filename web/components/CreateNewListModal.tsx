@@ -18,6 +18,7 @@ export default function CreateNewListModal({
     <Mutation
       mutation={CREATE_LIST}
       update={(cache, { data: { createList } }) => {
+        console.log("<CreateNewList /> mutation update()");
         const listsData: TodoListsQueryResult | null = cache.readQuery({
           query: FETCH_LISTS
         });

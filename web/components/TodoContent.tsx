@@ -15,12 +15,8 @@ interface TodoContentProps {
   todo: Todo;
 }
 
-export default function TodoContent({
-  endEdit,
-  isEditing,
-  selectedList,
-  todo
-}: TodoContentProps) {
+export default function TodoContent(props: TodoContentProps) {
+  const { endEdit, isEditing, selectedList, todo } = props;
   const [pendingContent, setPendingContent] = useState(todo.content);
   useEffect(() => {
     setPendingContent(todo.content);
@@ -34,21 +30,6 @@ export default function TodoContent({
         updateTodo: {
           ...todo,
           content: pendingContent
-        }
-      }}
-      update={(cache, { data }) => {
-        if (data) {
-          const { updateTodo } = data;
-          cache.writeData({
-            data: {
-              list: {
-                ...selectedList,
-                todos: selectedList.todos.map((t) =>
-                  t.id === todo.id ? updateTodo : t
-                )
-              }
-            }
-          });
         }
       }}
     >

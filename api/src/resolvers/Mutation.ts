@@ -132,14 +132,15 @@ export default {
           "Not authorized to touch anything in this list."
         );
       }
-      const { content, deadline, description } = args;
+      const { content, deadline } = args;
       const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
       const updates: any = {};
       // TODO: find a better way to do this
       if (args.hasOwnProperty("completed")) updates.completed = args.completed;
       if (content) updates.content = content;
       if (deadline) updates.deadline = deadline;
-      if (description) updates.description = description;
+      if (args.hasOwnProperty("description"))
+        updates.description = args.description;
       if (args.hasOwnProperty("important")) updates.important = args.important;
       await todoDocRef.update(updates);
       const updatedTodo = await todoDocRef.get();

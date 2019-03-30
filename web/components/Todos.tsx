@@ -2,19 +2,13 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import CreateNewTodo from "./CreateNewTodo";
-import DeleteTodo from "./DeleteTodo";
-import TodoContent from "./TodoContent";
-import CompletedCheckbox from "./CompletedCheckbox";
+import TodoListItem from "./TodoListItem";
 
 const StyledTodos = styled.section`
   grid-area: todos;
 
   ul {
     list-style-type: none;
-  }
-
-  li.selected {
-    background-color: #555;
   }
 `;
 
@@ -40,30 +34,15 @@ export default function Todos({
           const isEditing = currEditing === todo.id;
           const isSelected = selectedTodoId === todo.id;
           return (
-            <li key={todo.id} className={isSelected ? `selected` : ""}>
-              <CompletedCheckbox selectedList={selectedList} todo={todo} />
-              <TodoContent
-                endEdit={() => setCurrEditing(null)}
-                isEditing={isEditing}
-                selectedList={selectedList}
-                todo={todo}
-              />
-              <DeleteTodo selectedList={selectedList} todo={todo} />
-              <a
-                onClick={() => {
-                  setCurrEditing(isEditing ? null : todo.id);
-                }}
-              >
-                {isEditing ? "Cancel" : "Update"}
-              </a>
-              <a
-                onClick={() => {
-                  setSelectedTodoId(isSelected ? undefined : todo.id);
-                }}
-              >
-                {isSelected ? "Deselect" : "Select"}
-              </a>
-            </li>
+            <TodoListItem
+              key={todo.id}
+              isEditing={isEditing}
+              isSelected={isSelected}
+              selectedList={selectedList}
+              setCurrEditing={setCurrEditing}
+              setSelectedTodoId={setSelectedTodoId}
+              todo={todo}
+            />
           );
         })}
       </ul>
