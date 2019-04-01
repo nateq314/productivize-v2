@@ -6,6 +6,8 @@ import TodoContent from "./TodoContent";
 import DeleteTodo from "./DeleteTodo";
 
 const StyledTodoListItem = styled.li`
+  margin-bottom: 20px;
+
   &.important {
     .toggleImportant {
       background-color: #f00;

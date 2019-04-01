@@ -26,6 +26,7 @@ export const FETCH_LIST = gql`
         description
         important
         order
+        remind_on
       }
     }
   }
@@ -47,6 +48,7 @@ export const FETCH_LISTS = gql`
         description
         important
         order
+        remind_on
       }
     }
   }
@@ -74,8 +76,20 @@ export const CREATE_LIST = gql`
 `;
 
 export const CREATE_TODO = gql`
-  mutation CreateTodo($content: String!, $listId: String!) {
-    createTodo(content: $content, listId: $listId) {
+  mutation CreateTodo(
+    $content: String!
+    $important: Boolean
+    $deadline: DateTime
+    $remind_on: DateTime
+    $listId: String!
+  ) {
+    createTodo(
+      content: $content
+      deadline: $deadline
+      important: $important
+      listId: $listId
+      remind_on: $remind_on
+    ) {
       id
       added_on
       content
@@ -85,6 +99,7 @@ export const CREATE_TODO = gql`
       description
       important
       order
+      remind_on
     }
   }
 `;
@@ -103,16 +118,20 @@ export const UPDATE_TODO = gql`
     $todoId: String!
     $completed: Boolean
     $content: String
+    $deadline: DateTime
     $description: String
     $important: Boolean
+    $remind_on: DateTime
   ) {
     updateTodo(
       listId: $listId
       todoId: $todoId
       completed: $completed
       content: $content
+      deadline: $deadline
       description: $description
       important: $important
+      remind_on: $remind_on
     ) {
       id
       added_on
@@ -123,6 +142,7 @@ export const UPDATE_TODO = gql`
       description
       important
       order
+      remind_on
     }
   }
 `;

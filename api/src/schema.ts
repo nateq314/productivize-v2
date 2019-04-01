@@ -37,7 +37,14 @@ const schema = gql`
 
   type Mutation {
     createList(name: String!): List!
-    createTodo(content: String!, listId: String!): Todo!
+    createTodo(
+      content: String!
+      important: Boolean
+      deadline: DateTime
+      remind_on: DateTime
+      listId: String!
+      remind_on: DateTime
+    ): Todo!
     deleteTodo(listId: String!, todoId: String!): Result!
     updateTodo(
       listId: String!
@@ -47,6 +54,7 @@ const schema = gql`
       deadline: DateTime
       description: String
       important: Boolean
+      remind_on: DateTime
     ): Todo!
     login(idToken: String, session: String): LoginResult!
     logout: LoginResult!
@@ -76,6 +84,7 @@ const schema = gql`
     description: String!
     important: Boolean!
     order: Int!
+    remind_on: DateTime
   }
 
   type User {

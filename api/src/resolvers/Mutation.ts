@@ -65,10 +65,12 @@ export default {
         added_on: new Date(),
         content: args.content,
         completed: false,
-        // deadline: args.deadline,
+        completed_on: null,
+        deadline: args.deadline || null,
         description: "",
-        important: false,
-        order: currTodosSnapshot.size + 1
+        important: args.important,
+        order: currTodosSnapshot.size + 1,
+        remind_on: args.remind_on || null
       });
       const newTodoDocSnapshot = await newTodoDocRef.get();
       const newTodo = newTodoDocSnapshot.data();
@@ -132,24 +134,29 @@ export default {
           "Not authorized to touch anything in this list."
         );
       }
-      const { content, deadline } = args;
+      const { content } = args;
       const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
       const updates: any = {};
+
       // TODO: find a better way to do this
-      if (args.hasOwnProperty("completed")) updates.completed = args.completed;
+      if (args.hasOwnProperty("completed")) {
+        updates.completed = args.completed;
+        if (args.completed) updates.completed_on = new Date();
+        else updates.completed_on = null;
+      }
       if (content) updates.content = content;
-      if (deadline) updates.deadline = deadline;
+      if (args.hasOwnProperty("deadline")) updates.deadline = args.deadline;
       if (args.hasOwnProperty("description"))
         updates.description = args.description;
       if (args.hasOwnProperty("important")) updates.important = args.important;
+      if (args.hasOwnProperty("remind_on")) updates.remind_on = args.remind_on;
+
       await todoDocRef.update(updates);
       const updatedTodo = await todoDocRef.get();
-      const returnValue = {
+      return {
         ...updatedTodo.data(),
         id: todoDocRef.id
       };
-      console.log("return value:", returnValue);
-      return returnValue;
     } catch (error) {
       console.error(error);
     }

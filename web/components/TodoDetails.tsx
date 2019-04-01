@@ -4,7 +4,7 @@ import { Todo, TodoList } from "./Main";
 import Toggle from "./Toggle";
 import TodoContent from "./TodoContent";
 import TodoDescription from "./TodoDescription";
-import TodoDeadline from "./TodoDeadline";
+import TodoDateTimeInput from "./TodoDateTimeInput";
 
 const StyledTodoDetails = styled.section`
   grid-area: details;
@@ -53,7 +53,18 @@ export default function TodoDetails(props: TodoDetailsProps) {
           )}
         </Toggle>
       </header>
-      <TodoDeadline todo={todo} />
+      <TodoDateTimeInput
+        field="deadline"
+        placeholder="Set due date"
+        selectedListId={selectedList.id}
+        todo={todo}
+      />
+      <TodoDateTimeInput
+        field="remind_on"
+        placeholder="Remind me"
+        selectedListId={selectedList.id}
+        todo={todo}
+      />
       <h4>Description</h4>
       <TodoDescription selectedListId={selectedList.id} todo={todo} />
     </StyledTodoDetails>

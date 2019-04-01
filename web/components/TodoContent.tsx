@@ -3,6 +3,7 @@ import { Mutation } from "react-apollo";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import { UPDATE_TODO } from "../other/queries";
+import Input from "./Input";
 
 const StyledTodoContent = styled.form`
   display: inline-block;
@@ -48,7 +49,7 @@ export default function TodoContent(props: TodoContentProps) {
               endEdit();
             }}
           >
-            <input
+            <Input
               readOnly={!isEditing}
               value={isEditing ? pendingContent : todo.content}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {

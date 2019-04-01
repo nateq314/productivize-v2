@@ -3,6 +3,7 @@ import { Mutation } from "react-apollo";
 import styled from "styled-components";
 import { CREATE_TODO } from "../other/queries";
 import { TodoList } from "./Main";
+import Input from "./Input";
 
 const StyledCreateNewTodo = styled.form``;
 
@@ -17,14 +18,15 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
     createTodo: {
       __typename: "Todo",
       id: "temp",
-      added_on: new Date(),
+      added_on: new Date().toISOString(),
       completed: false,
       completed_on: null,
       content,
       deadline: null,
       description: "",
       important: false,
-      order: selectedList.todos.length + 1
+      order: selectedList.todos.length + 1,
+      remind_on: null
     }
   };
 
@@ -51,16 +53,21 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
           <StyledCreateNewTodo
             onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
               e.preventDefault();
-              createTodo({
+              const args = {
                 variables: {
                   content,
-                  listId: selectedList.id
+                  deadline: null,
+                  important: false,
+                  listId: selectedList.id,
+                  remind_on: null
                 }
-              });
+              };
+              console.log("About to call createTodo() with args:", args);
+              createTodo(args);
               setContent("");
             }}
           >
-            <input
+            <Input
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setContent(e.target.value);
               }}

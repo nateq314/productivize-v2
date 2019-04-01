@@ -44,7 +44,6 @@ export default function TodoDescription({
   selectedListId,
   todo
 }: TodoDescriptionProps) {
-  useRenderLogger("TodoDescription");
   const [isEditing, setEditingStatus] = useState(false);
   const [pendingDesc, setPendingDesc] = useState(todo.description);
 

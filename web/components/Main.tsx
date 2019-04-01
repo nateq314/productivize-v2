@@ -26,13 +26,14 @@ export interface TodoList {
 
 export interface Todo {
   id: string;
-  added_on: Date;
+  added_on: string;
   completed: boolean;
-  completed_on: Date | null;
+  completed_on: string | null;
   content: string;
-  deadline: Date | null;
+  deadline: string | null;
   description: string;
   important: boolean;
+  remind_on: string | null;
 }
 
 export default function Main() {

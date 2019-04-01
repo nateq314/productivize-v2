@@ -69,5 +69,5 @@ export function useRenderLogger(compName: string, props?: any) {
   useEffect(() => {
     console.log(`<${compName} /> render()`);
     if (props) console.log("props:", props);
-  }, [props]);
+  });
 }
