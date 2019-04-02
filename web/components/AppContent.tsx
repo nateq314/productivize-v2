@@ -20,7 +20,7 @@ interface AppContentProps {
 export default function AppContent(props: AppContentProps) {
   const { lists, toggleNewListModal } = props;
   const [selectedListId, setSelectedListId] = useState(lists[0].id);
-  const [selectedTodoId, setSelectedTodoId] = useState<string | undefined>();
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const selectedList = lists.find(
     (list) => selectedListId === list.id
   ) as TodoList;
@@ -32,7 +32,10 @@ export default function AppContent(props: AppContentProps) {
         lists={lists}
         toggleNewListModal={toggleNewListModal}
         selectedList={selectedListId}
-        setSelectedList={setSelectedListId}
+        setSelectedList={(id: string) => {
+          setSelectedListId(id);
+          setSelectedTodoId(null);
+        }}
       />
       <Todos
         todos={todos}

@@ -53,18 +53,23 @@ export default function TodoDetails(props: TodoDetailsProps) {
           )}
         </Toggle>
       </header>
-      <TodoDateTimeInput
-        field="deadline"
-        placeholder="Set due date"
-        selectedListId={selectedList.id}
-        todo={todo}
-      />
-      <TodoDateTimeInput
-        field="remind_on"
-        placeholder="Remind me"
-        selectedListId={selectedList.id}
-        todo={todo}
-      />
+      <div className="deadline">
+        <TodoDateTimeInput
+          field="deadline"
+          placeholder="Set due date"
+          selectedListId={selectedList.id}
+          todo={todo}
+        />
+      </div>
+      <div className="remind_on">
+        <TodoDateTimeInput
+          field="remind_on"
+          includeTime
+          placeholder="Remind me"
+          selectedListId={selectedList.id}
+          todo={todo}
+        />
+      </div>
       <h4>Description</h4>
       <TodoDescription selectedListId={selectedList.id} todo={todo} />
     </StyledTodoDetails>

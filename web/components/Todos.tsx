@@ -14,8 +14,8 @@ const StyledTodos = styled.section`
 
 interface TodosProps {
   selectedList: TodoList;
-  selectedTodoId?: string;
-  setSelectedTodoId: React.Dispatch<React.SetStateAction<string | undefined>>;
+  selectedTodoId: string | null;
+  setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
   todos: Todo[];
 }
 

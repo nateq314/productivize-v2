@@ -24,7 +24,7 @@ interface TodoListItemProps {
   isSelected: boolean;
   selectedList: TodoList;
   setCurrEditing: React.Dispatch<React.SetStateAction<string | null>>;
-  setSelectedTodoId: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
   todo: Todo;
 }
 
@@ -63,7 +63,7 @@ export default function TodoListItem({
       </a>
       <a
         onClick={() => {
-          setSelectedTodoId(isSelected ? undefined : todo.id);
+          setSelectedTodoId(isSelected ? null : todo.id);
         }}
       >
         {isSelected ? "Deselect" : "Select"}

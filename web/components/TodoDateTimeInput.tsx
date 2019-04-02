@@ -1,6 +1,10 @@
 import React from "react";
 import { Mutation, MutationFn, OperationVariables } from "react-apollo";
-import { DatePicker, MuiPickersUtilsProvider } from "material-ui-pickers";
+import {
+  DatePicker,
+  DateTimePicker,
+  MuiPickersUtilsProvider
+} from "material-ui-pickers";
 import DateFnsUtils from "@date-io/date-fns";
 import { Todo } from "./Main";
 import Input, { InputProps } from "./Input";
@@ -11,20 +15,23 @@ interface TodoDateTimeInputProps {
   placeholder: string;
   selectedListId: string;
   todo: Todo;
+  includeTime?: boolean;
 }
 
 export default function TodoDateTimeInput({
   field,
+  includeTime,
   placeholder,
   selectedListId,
   todo
 }: TodoDateTimeInputProps) {
+  const Picker = includeTime ? DateTimePicker : DatePicker;
   return (
     <Mutation mutation={UPDATE_TODO}>
       {(updateTodo: MutationFn<any, OperationVariables>) => {
         return (
           <MuiPickersUtilsProvider utils={DateFnsUtils}>
-            <DatePicker
+            <Picker
               placeholder={placeholder}
               value={todo[field]}
               onChange={(newDateTime: Date) => {
