@@ -22,11 +22,24 @@ export const pubsub = new GooglePubSub(
   commonMessageHandler
 );
 
-export const SOMETHING_CHANGED_TOPIC = "something_changed";
+export const LIST_EVENTS = "list_events";
+export const TODO_EVENTS = "todo_events";
 
-export default {
-  somethingChanged: {
-    resolve: (payload: any) => payload,
-    subscribe: () => pubsub.asyncIterator(SOMETHING_CHANGED_TOPIC)
+function resolve(payload: any) {
+  return payload;
+}
+
+export default Object.entries({
+  listEvents: {
+    subscribe: () => pubsub.asyncIterator(LIST_EVENTS)
+  },
+  todoEvents: {
+    subscribe: () => pubsub.asyncIterator(TODO_EVENTS)
   }
-};
+}).reduce((resolvers: any, [key, value]) => {
+  resolvers[key] = {
+    ...value,
+    resolve
+  };
+  return resolvers;
+}, {});

@@ -8,7 +8,7 @@ import {
 import DateFnsUtils from "@date-io/date-fns";
 import { Todo } from "./Main";
 import Input, { InputProps } from "./Input";
-import { UPDATE_TODO } from "../other/queries";
+import { UPDATE_TODO } from "../other/mutations";
 
 interface TodoDateTimeInputProps {
   field: "deadline" | "remind_on";

@@ -1,24 +1,27 @@
 import React from "react";
 import { Mutation } from "react-apollo";
 import Modal from "./Modal";
-import { CREATE_LIST, FETCH_LISTS } from "../other/queries";
-import { TodoListsQueryResult } from "./Main";
+import { FETCH_LISTS } from "../other/queries";
+import { CREATE_LIST } from "../other/mutations";
+import { TodoListsQueryResult, TodoList } from "./Main";
 import * as crypto from "crypto";
 
 interface CreateNewListModalProps {
   isVisible: boolean;
+  lists: TodoList[];
   setVisibility: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export default function CreateNewListModal({
   isVisible,
+  lists,
   setVisibility
 }: CreateNewListModalProps) {
   return (
     <Mutation
+      ignoreResults
       mutation={CREATE_LIST}
       update={(cache, { data: { createList } }) => {
-        console.log("<CreateNewList /> mutation update()");
         const listsData: TodoListsQueryResult | null = cache.readQuery({
           query: FETCH_LISTS
         });
@@ -36,13 +39,24 @@ export default function CreateNewListModal({
           <Modal visible={isVisible} setVisibility={setVisibility}>
             <div onClick={() => setVisibility(false)}>Close the modal</div>
             <div
-              onClick={() =>
+              onClick={() => {
+                const randomName = crypto.randomBytes(8).toString("hex");
                 createList({
                   variables: {
-                    name: crypto.randomBytes(8).toString("hex")
+                    name: randomName
+                  },
+                  optimisticResponse: {
+                    __typename: "Mutation",
+                    createList: {
+                      __typename: "List",
+                      id: "temp",
+                      name: randomName,
+                      order: lists.length + 1,
+                      todos: []
+                    }
                   }
-                }).catch((error) => console.error(error))
-              }
+                }).catch((error) => console.error(error));
+              }}
             >
               Call the mutation
             </div>

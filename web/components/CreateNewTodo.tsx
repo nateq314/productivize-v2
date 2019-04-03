@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mutation } from "react-apollo";
 import styled from "styled-components";
-import { CREATE_TODO } from "../other/queries";
+import { CREATE_TODO } from "../other/mutations";
 import { TodoList } from "./Main";
 import Input from "./Input";
 
@@ -18,6 +18,7 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
     createTodo: {
       __typename: "Todo",
       id: "temp",
+      list_id: selectedList.id,
       added_on: new Date().toISOString(),
       completed: false,
       completed_on: null,

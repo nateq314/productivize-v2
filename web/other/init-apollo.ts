@@ -3,12 +3,11 @@ import {
   InMemoryCache,
   HttpLink,
   NormalizedCacheObject,
-  gql
-  // ApolloLink,
-  // NextLink,
-  // concat
+  split
 } from "apollo-boost";
+import { WebSocketLink } from "apollo-link-ws";
 import fetch from "isomorphic-unfetch";
+import { getMainDefinition } from "apollo-utilities";
 
 let apolloClient: ApolloClient<NormalizedCacheObject>;
 const isBrowser = typeof window !== "undefined";
@@ -28,10 +27,27 @@ function create(initialState: any, linkOptions: HttpLink.Options) {
     ...linkOptions
   });
 
+  const link = isBrowser
+    ? split(
+        // split based on operation type
+        ({ query }) => {
+          const { kind, operation } = getMainDefinition(query);
+          return kind === "OperationDefinition" && operation === "subscription";
+        },
+        new WebSocketLink({
+          uri: "wss://localhost:3000/graphql",
+          options: {
+            reconnect: true
+          }
+        }),
+        httpLink
+      )
+    : httpLink;
+
   return new ApolloClient({
     connectToDevTools: isBrowser,
     ssrMode: !isBrowser,
-    link: httpLink,
+    link,
     cache: new InMemoryCache().restore(initialState || {})
   });
 }

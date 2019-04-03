@@ -3,7 +3,7 @@ import { Mutation, MutationFn, OperationVariables } from "react-apollo";
 import styled from "styled-components";
 import { Todo } from "./Main";
 import { useEscapeKeyListener, useRenderLogger } from "../effects";
-import { UPDATE_TODO } from "../other/queries";
+import { UPDATE_TODO } from "../other/mutations";
 import { Subscription, Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { Mutation } from "react-apollo";
 import { Todo, TodoList } from "./Main";
-import { UPDATE_TODO } from "../other/queries";
+import { UPDATE_TODO } from "../other/mutations";
 
 interface ToggleProps {
   children: (toggle: () => void) => React.ReactNode;

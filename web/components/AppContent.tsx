@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import TodoLists from "./TodoLists";
@@ -14,17 +14,30 @@ const StyledAppContent = styled.div`
 
 interface AppContentProps {
   lists: TodoList[];
+  subscribeToListEvents: () => () => void;
   toggleNewListModal: () => void;
 }
 
 export default function AppContent(props: AppContentProps) {
-  const { lists, toggleNewListModal } = props;
+  const { lists, subscribeToListEvents, toggleNewListModal } = props;
   const [selectedListId, setSelectedListId] = useState(lists[0].id);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const selectedList = lists.find(
     (list) => selectedListId === list.id
   ) as TodoList;
   const { todos } = selectedList;
+
+  // note this returns the unsubscribe function, to be called at component unmount
+  // TODO: unsubscribe() below won't get run on logout or closing browser tab or
+  // direct navigation to another url, because those don't involve unmounting the
+  // component. So need to find an appropriate place to call this.
+  useEffect(() => {
+    const unsubscribe = subscribeToListEvents();
+    return () => {
+      console.log("about to unsubscribe");
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <StyledAppContent>

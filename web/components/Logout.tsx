@@ -3,7 +3,7 @@ import styled from "styled-components";
 import firebase from "../other/firebase";
 import { Mutation } from "react-apollo";
 import { UserContext } from "../pages/_app";
-import { LOGOUT } from "../other/queries";
+import { LOGOUT } from "../other/mutations";
 
 const StyledLogout = styled.span``;
 

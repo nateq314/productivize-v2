@@ -7,7 +7,11 @@ function configureServer() {
   const app = express();
   app.use(
     cors({
-      origin: ["https://nateq314.now.sh", "http://localhost:3000"],
+      origin: [
+        "https://nateq314.now.sh",
+        "http://localhost:3000",
+        "http://localhost:4000"
+      ],
       credentials: true
     })
   );

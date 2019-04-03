@@ -9,6 +9,7 @@ import {
   verifyUserSessionToken
 } from "../firebase";
 import { List } from "../schema";
+import { pubsub, LIST_EVENTS, TODO_EVENTS } from "./Subscription";
 
 interface ILogin {
   idToken?: string;
@@ -16,13 +17,6 @@ interface ILogin {
 }
 
 export default {
-  // foo() {
-  //   pubsub.publish(SOMETHING_CHANGED_TOPIC, { message: "hello" });
-  //   return {
-  //     message: "hello"
-  //   };
-  // },
-
   async createList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
@@ -40,16 +34,17 @@ export default {
           uid: (ctx.user as fbAdmin.auth.DecodedIdToken).uid
         });
       const newListDocSnapshot = await newListDocument.get();
-      const list = newListDocSnapshot.data();
-
-      if (list) {
-        return { ...list, id: newListDocument.id, todos: [] };
-      }
+      const created = {
+        ...newListDocSnapshot.data(),
+        id: newListDocument.id,
+        todos: []
+      };
+      pubsub.publish(LIST_EVENTS, { created });
+      return created;
     } catch (error) {
       console.error(error);
       return { error: error.message };
     }
-    return { error: "List Creation Error" };
   },
 
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
@@ -73,18 +68,17 @@ export default {
         remind_on: args.remind_on || null
       });
       const newTodoDocSnapshot = await newTodoDocRef.get();
-      const newTodo = newTodoDocSnapshot.data();
-
-      if (newTodo) {
-        return {
-          ...newTodo,
-          id: newTodoDocRef.id
-        };
-      }
+      const created = {
+        ...newTodoDocSnapshot.data(),
+        id: newTodoDocRef.id,
+        list_id: args.listId
+      };
+      pubsub.publish(TODO_EVENTS, { created });
+      return created;
     } catch (error) {
       console.error(error);
+      return { error: error.message };
     }
-    return { error: "Todo Creation Error" };
   },
 
   async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
@@ -104,15 +98,19 @@ export default {
           "Not authorized to touch anything in this list."
         );
       }
-      await todoListDocRef
-        .collection("todos")
-        .doc(args.todoId)
-        .delete();
+      const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
+      const deleted = {
+        ...(await todoDocRef.get()).data(),
+        id: todoDocRef.id,
+        list_id: args.listId
+      };
+      await todoDocRef.delete();
+      pubsub.publish(TODO_EVENTS, { deleted });
       return { success: true };
     } catch (error) {
       console.error(error);
+      return { error: error.message };
     }
-    return { error: "Todo Deletion Error" };
   },
 
   async updateTodo(parent: any, args: any, ctx: Context, info: any) {
@@ -152,15 +150,18 @@ export default {
       if (args.hasOwnProperty("remind_on")) updates.remind_on = args.remind_on;
 
       await todoDocRef.update(updates);
-      const updatedTodo = await todoDocRef.get();
-      return {
-        ...updatedTodo.data(),
-        id: todoDocRef.id
+      const updatedTodoDocSnapshot = await todoDocRef.get();
+      const updated = {
+        ...updatedTodoDocSnapshot.data(),
+        id: todoDocRef.id,
+        list_id: args.listId
       };
+      pubsub.publish(TODO_EVENTS, { updated });
+      return updated;
     } catch (error) {
       console.error(error);
+      return { error: error.message };
     }
-    return { error: "Todo Update Error" };
   },
 
   async login(parent: any, args: ILogin, ctx: Context, info: any) {

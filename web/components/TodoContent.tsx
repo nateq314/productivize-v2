@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Mutation } from "react-apollo";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
-import { UPDATE_TODO } from "../other/queries";
+import { UPDATE_TODO } from "../other/mutations";
 import Input from "./Input";
 
 const StyledTodoContent = styled.form`
