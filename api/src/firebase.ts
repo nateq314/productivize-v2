@@ -73,7 +73,7 @@ function getUserRecord(uid: string) {
 
 async function verifyIdToken(idToken: string) {
   try {
-    const decodedIdToken = await admin.auth().verifyIdToken(idToken);
+    const decodedIdToken = await admin.auth().verifyIdToken(idToken, true);
     return decodedIdToken;
   } catch (error) {
     console.error(error);

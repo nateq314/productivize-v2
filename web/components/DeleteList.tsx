@@ -1,55 +1,53 @@
 import React from "react";
 import { Mutation } from "react-apollo";
-import { DELETE_TODO } from "../other/mutations";
-import { TodoList, Todo } from "./Main";
+import { DELETE_LIST } from "../other/mutations";
+import { TodoList } from "./Main";
+import { FETCH_LISTS } from "../other/queries";
 
-interface DeleteTodoProps {
+interface DeleteListProps {
   children: (configuredMutationFn: () => void) => React.ReactNode;
-  selectedList: TodoList;
-  todo: Todo;
+  lists: TodoList[];
+  listId: string;
 }
 
 const optimisticResponse = {
   __typename: "Mutation",
-  deleteTodo: {
+  deleteList: {
     __typename: "Result",
     success: true
   }
 };
 
-export default function DeleteTodo({
+export default function DeleteList({
   children,
-  selectedList,
-  todo
-}: DeleteTodoProps) {
+  lists,
+  listId
+}: DeleteListProps) {
   return (
     <Mutation
-      mutation={DELETE_TODO}
+      mutation={DELETE_LIST}
       optimisticResponse={optimisticResponse}
       update={(cache, { data }) => {
         if (data) {
           const {
-            deleteTodo: { success }
+            deleteList: { success }
           } = data;
           if (success) {
-            cache.writeData({
+            cache.writeQuery({
+              query: FETCH_LISTS,
               data: {
-                list: {
-                  ...selectedList,
-                  todos: selectedList.todos.filter((t) => t.id !== todo.id)
-                }
+                lists: lists.filter((list) => list.id !== listId)
               }
             });
           }
         }
       }}
     >
-      {(deleteTodo) =>
+      {(deleteList) =>
         children(() => {
-          deleteTodo({
+          deleteList({
             variables: {
-              listId: selectedList.id,
-              todoId: todo.id
+              id: listId
             }
           });
         })

@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { TodoList } from "./Main";
+import DeleteList from "./DeleteList";
 
 const StyledTodoLists = styled.section`
   grid-area: lists;
@@ -43,12 +44,11 @@ export default function TodoLists({
         {lists.map((list) => {
           const active = selectedList === list.id;
           return (
-            <li
-              key={list.id}
-              className={active ? "active" : ""}
-              onClick={() => setSelectedList(list.id)}
-            >
-              {list.name}
+            <li key={list.id} className={active ? "active" : ""}>
+              <span onClick={() => setSelectedList(list.id)}>{list.name}</span>
+              <DeleteList lists={lists} listId={list.id}>
+                {(deleteList) => <span onClick={deleteList}> Delete</span>}
+              </DeleteList>
             </li>
           );
         })}

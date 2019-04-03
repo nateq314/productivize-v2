@@ -53,7 +53,9 @@ export default function TodoListItem({
         selectedList={selectedList}
         todo={todo}
       />
-      <DeleteTodo selectedList={selectedList} todo={todo} />
+      <DeleteTodo selectedList={selectedList} todo={todo}>
+        {(deleteTodo) => <span onClick={deleteTodo}> Delete</span>}
+      </DeleteTodo>
       <a
         onClick={() => {
           setCurrEditing(isEditing ? null : todo.id);

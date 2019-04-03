@@ -1,12 +1,9 @@
 import { useEffect } from "react";
 
-export function useEscapeKeyListener(
-  active: boolean,
-  setActiveStatus: React.Dispatch<React.SetStateAction<boolean>>
-) {
+export function useEscapeKeyListener(active: boolean, closeModal: () => void) {
   const closeModalKeyboardEventListener = (e: KeyboardEvent) => {
     if (e.key == "Escape") {
-      setActiveStatus(false);
+      closeModal();
     }
   };
 
@@ -30,7 +27,7 @@ export function useEscapeKeyListener(
 
 export function useClickAwayListener(
   visible: boolean,
-  setVisibility: React.Dispatch<React.SetStateAction<boolean>>,
+  closeModal: () => void,
   avoidCloseClickRegion: React.RefObject<HTMLDivElement>
 ) {
   const closeModalMouseEventListener = (e: MouseEvent) => {
@@ -39,7 +36,7 @@ export function useClickAwayListener(
       e.stopPropagation();
       return;
     }
-    setVisibility(false);
+    closeModal();
   };
 
   useEffect(() => {

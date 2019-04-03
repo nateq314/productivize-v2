@@ -78,16 +78,23 @@ export default function Main() {
                     } = subscriptionData.data.listEvents;
                     if (created) {
                       const index = prev.lists.findIndex(
-                        (list) => list.id === created.id
+                        (list) => list.id === created.id || list.id === "temp"
                       );
                       return index >= 0
                         ? // Already added
-                          prev
+                          {
+                            lists: [
+                              ...prev.lists.slice(0, index),
+                              created,
+                              ...prev.lists.slice(index + 1)
+                            ]
+                          }
                         : // Or this could be another terminal
                           {
                             lists: prev.lists.concat(created)
                           };
                     } else if (deleted) {
+                      console.log("deleted:", deleted);
                       return {
                         lists: prev.lists.filter(
                           (list) => list.id !== deleted.id
@@ -118,7 +125,7 @@ export default function Main() {
             />
             <CreateNewListModal
               isVisible={newListModalIsVisible}
-              setVisibility={setNewListModalVisibility}
+              closeModal={() => setNewListModalVisibility(false)}
               lists={lists}
             />
           </StyledMain>

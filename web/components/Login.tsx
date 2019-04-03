@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import styled from "styled-components";
-import firebase from "../other/firebase";
-import { Mutation } from "react-apollo";
+import firebase, { auth } from "../other/firebase";
+import { Mutation, FetchResult } from "react-apollo";
 import gql from "graphql-tag";
 import * as Cookies from "cookies-js";
 
@@ -50,12 +50,33 @@ function Login() {
                   );
                 // TODO: is login fail handled correctly here?
                 if (user) {
-                  const idToken = await user.getIdToken();
+                  let idToken = await user.getIdToken();
                   // Only purpose of this call is to set the session cookie, not to get the user object
-                  const response = await login({
-                    variables: { idToken }
-                  });
+                  let response: void | FetchResult<
+                    any,
+                    Record<string, any>,
+                    Record<string, any>
+                  >;
+                  try {
+                    response = await login({
+                      variables: { idToken }
+                    });
+                  } catch (error) {
+                    const credential = auth.EmailAuthProvider.credential(
+                      (email.current as HTMLInputElement).value,
+                      (password.current as HTMLInputElement).value
+                    );
+                    const result = await user.reauthenticateWithCredential(
+                      credential
+                    );
+                    console.log("re-authentication result:", result);
+                    idToken = await user.getIdToken();
+                    response = await login({
+                      variables: { idToken }
+                    });
+                  }
                   if (response) {
+                    console.log("response:", response);
                     const { error } = response.data.login as LoginResponse;
                     if (error) {
                       console.error(error);

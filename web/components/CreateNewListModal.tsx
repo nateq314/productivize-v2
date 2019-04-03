@@ -1,27 +1,39 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Mutation } from "react-apollo";
 import Modal from "./Modal";
 import { FETCH_LISTS } from "../other/queries";
 import { CREATE_LIST } from "../other/mutations";
 import { TodoListsQueryResult, TodoList } from "./Main";
-import * as crypto from "crypto";
 
 interface CreateNewListModalProps {
   isVisible: boolean;
   lists: TodoList[];
-  setVisibility: React.Dispatch<React.SetStateAction<boolean>>;
+  closeModal: () => void;
 }
 
 export default function CreateNewListModal({
   isVisible,
   lists,
-  setVisibility
+  closeModal
 }: CreateNewListModalProps) {
+  const [newListName, setNewListName] = useState("");
+  const newListNameInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isVisible) {
+      (newListNameInput.current as HTMLInputElement).focus();
+    }
+  }, [isVisible]);
+
   return (
     <Mutation
       ignoreResults
       mutation={CREATE_LIST}
       update={(cache, { data: { createList } }) => {
+        // update() will still get called when the mutation result comes back,
+        // but we choose to only handle the initial (optimistic) update, and
+        // save the real update for the subscription handler. Hopefully this
+        // will reduce the likelihood of a data race.
         const listsData: TodoListsQueryResult | null = cache.readQuery({
           query: FETCH_LISTS
         });
@@ -36,30 +48,38 @@ export default function CreateNewListModal({
     >
       {(createList) => {
         return (
-          <Modal visible={isVisible} setVisibility={setVisibility}>
-            <div onClick={() => setVisibility(false)}>Close the modal</div>
-            <div
-              onClick={() => {
-                const randomName = crypto.randomBytes(8).toString("hex");
+          <Modal visible={isVisible} closeModal={closeModal}>
+            <div onClick={closeModal}>Close the modal</div>
+            <form
+              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                e.preventDefault();
                 createList({
                   variables: {
-                    name: randomName
+                    name: newListName
                   },
                   optimisticResponse: {
                     __typename: "Mutation",
                     createList: {
                       __typename: "List",
                       id: "temp",
-                      name: randomName,
+                      name: newListName,
                       order: lists.length + 1,
                       todos: []
                     }
                   }
                 }).catch((error) => console.error(error));
+                setNewListName("");
+                closeModal();
               }}
             >
-              Call the mutation
-            </div>
+              <input
+                ref={newListNameInput}
+                value={newListName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setNewListName(e.target.value)
+                }
+              />
+            </form>
           </Modal>
         );
       }}

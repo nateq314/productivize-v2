@@ -33,18 +33,14 @@ const StyledModal = styled.div`
 
 interface ModalProps {
   children: React.ReactNode;
-  setVisibility: React.Dispatch<React.SetStateAction<boolean>>;
+  closeModal: () => void;
   visible: boolean;
 }
 
-export default function Modal({
-  children,
-  setVisibility,
-  visible
-}: ModalProps) {
+export default function Modal({ children, closeModal, visible }: ModalProps) {
   const dialog = useRef<HTMLDivElement>(null);
-  useEscapeKeyListener(visible, setVisibility);
-  useClickAwayListener(visible, setVisibility, dialog);
+  useEscapeKeyListener(visible, closeModal);
+  useClickAwayListener(visible, closeModal, dialog);
 
   return (
     <StyledModal className={`Modal ${visible ? "visible" : ""}`}>

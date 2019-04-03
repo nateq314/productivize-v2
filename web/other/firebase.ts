@@ -16,4 +16,6 @@ try {
   }
 }
 
+const auth = firebase.auth;
+export { auth };
 export default app;

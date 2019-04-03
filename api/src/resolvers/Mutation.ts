@@ -17,6 +17,9 @@ interface ILogin {
 }
 
 export default {
+  /**********************
+   * CREATE A LIST
+   *********************/
   async createList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
@@ -47,6 +50,9 @@ export default {
     }
   },
 
+  /**********************
+   * DELETE A LIST
+   *********************/
   async deleteList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
@@ -67,7 +73,7 @@ export default {
         ...todoListDocSnapshot.data(),
         id: args.id
       };
-      pubsub.publish(TODO_EVENTS, { deleted });
+      pubsub.publish(LIST_EVENTS, { deleted });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -75,6 +81,9 @@ export default {
     }
   },
 
+  /**********************
+   * CREATE A TODO
+   *********************/
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
@@ -109,6 +118,9 @@ export default {
     }
   },
 
+  /**********************
+   * DELETE A TODO
+   *********************/
   async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
@@ -141,6 +153,9 @@ export default {
     }
   },
 
+  /**********************
+   * UPDATE A TODO
+   *********************/
   async updateTodo(parent: any, args: any, ctx: Context, info: any) {
     // TODO: see if this can be merged with createTodo(), since Firestore's
     // set() method handles both creation and updating.

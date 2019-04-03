@@ -63,7 +63,6 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
                   remind_on: null
                 }
               };
-              console.log("About to call createTodo() with args:", args);
               createTodo(args);
               setContent("");
             }}
