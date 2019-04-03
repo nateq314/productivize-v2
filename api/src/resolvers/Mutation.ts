@@ -82,6 +82,45 @@ export default {
   },
 
   /**********************
+   * UPDATE A LIST
+   *********************/
+  async updateList(parent: any, args: any, ctx: Context, info: any) {
+    authorize(ctx);
+    try {
+      const todoListDocRef = fbAdmin
+        .firestore()
+        .collection("lists")
+        .doc(args.id);
+      const todoListDocSnapshot = await todoListDocRef.get();
+      if (
+        (todoListDocSnapshot.data() as List).uid !==
+        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
+      ) {
+        // TODO: test this
+        throw new ForbiddenError(
+          "Not authorized to touch anything in this list."
+        );
+      }
+      const { name, order } = args;
+      const updates: any = {};
+      if (name) updates.name = name;
+      if (order) updates.order = order;
+
+      await todoListDocRef.update(updates);
+      const updatedTodoListDocSnapshot = await todoListDocRef.get();
+      const updated = {
+        ...updatedTodoListDocSnapshot.data(),
+        id: args.id
+      };
+      pubsub.publish(LIST_EVENTS, { updated });
+      return updated;
+    } catch (error) {
+      console.error(error);
+      return { error: error.message };
+    }
+  },
+
+  /**********************
    * CREATE A TODO
    *********************/
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
