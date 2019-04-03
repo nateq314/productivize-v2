@@ -47,6 +47,34 @@ export default {
     }
   },
 
+  async deleteList(parent: any, args: any, ctx: Context, info: any) {
+    authorize(ctx);
+    try {
+      const todoListDocRef = fbAdmin
+        .firestore()
+        .collection("lists")
+        .doc(args.id);
+      const todoListDocSnapshot = await todoListDocRef.get();
+      if (
+        (todoListDocSnapshot.data() as List).uid !==
+        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
+      ) {
+        // TODO: test this
+        throw new ForbiddenError("You are not authorized to touch this list.");
+      }
+      await todoListDocRef.delete();
+      const deleted = {
+        ...todoListDocSnapshot.data(),
+        id: args.id
+      };
+      pubsub.publish(TODO_EVENTS, { deleted });
+      return { success: true };
+    } catch (error) {
+      console.error(error);
+      return { error: error.message };
+    }
+  },
+
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {

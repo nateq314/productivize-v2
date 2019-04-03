@@ -44,6 +44,7 @@ const schema = gql`
 
   type Mutation {
     createList(name: String!): List!
+    deleteList(id: ID!): Result!
     createTodo(
       content: String!
       important: Boolean
