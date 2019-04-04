@@ -15,11 +15,17 @@ const StyledAppContent = styled.div`
 interface AppContentProps {
   lists: TodoList[];
   subscribeToListEvents: () => () => void;
-  toggleNewListModal: () => void;
+  openNewListModal: () => void;
+  openUpdateListModal: (list: TodoList) => void;
 }
 
 export default function AppContent(props: AppContentProps) {
-  const { lists, subscribeToListEvents, toggleNewListModal } = props;
+  const {
+    lists,
+    subscribeToListEvents,
+    openNewListModal,
+    openUpdateListModal
+  } = props;
   const [selectedListId, setSelectedListId] = useState(lists[0].id);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const selectedList = lists.find(
@@ -33,7 +39,7 @@ export default function AppContent(props: AppContentProps) {
     setSelectedTodoId(null);
   }
 
-  const todos = selectedList ? selectedList.todos : [];
+  const todos = selectedList.todos;
 
   // note this returns the unsubscribe function, to be called at component unmount
   // TODO: unsubscribe() below won't get run on logout or closing browser tab or
@@ -52,7 +58,8 @@ export default function AppContent(props: AppContentProps) {
     <StyledAppContent>
       <TodoLists
         lists={lists}
-        toggleNewListModal={toggleNewListModal}
+        openNewListModal={openNewListModal}
+        openUpdateListModal={openUpdateListModal}
         selectedList={selectedListId}
         setSelectedList={(id: string) => {
           setSelectedListId(id);

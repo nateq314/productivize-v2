@@ -107,9 +107,11 @@ export default {
       if (order) updates.order = order;
 
       await todoListDocRef.update(updates);
+
       const updatedTodoListDocSnapshot = await todoListDocRef.get();
+      const newTodoListData = updatedTodoListDocSnapshot.data() as List;
       const updated = {
-        ...updatedTodoListDocSnapshot.data(),
+        ...newTodoListData,
         id: args.id
       };
       pubsub.publish(LIST_EVENTS, { updated });

@@ -9,6 +9,7 @@ import {
   LIST_EVENTS_SUBSCRIPTION,
   ListEventsSubscriptionData
 } from "../other/subscriptions";
+import UpdateListModal from "./UpdateListModal";
 
 const StyledMain = styled.div`
   height: 100vh;
@@ -41,11 +42,29 @@ export interface Todo {
   remind_on: string | null;
 }
 
+interface UpdateListModalState {
+  visible: boolean;
+  list: TodoList | null;
+}
+
 export default function Main() {
   const [newListModalIsVisible, setNewListModalVisibility] = useState(false);
+  const [updateListModalState, setUpdateListModalState] = useState<
+    UpdateListModalState
+  >({
+    visible: false,
+    list: null
+  });
 
-  const toggleNewListModal = () => {
-    setNewListModalVisibility(!newListModalIsVisible);
+  const openNewListModal = () => {
+    setNewListModalVisibility(true);
+  };
+
+  const openUpdateListModal = (list: TodoList) => {
+    setUpdateListModalState({
+      visible: true,
+      list
+    });
   };
 
   return (
@@ -60,7 +79,8 @@ export default function Main() {
           <StyledMain>
             <AppBar />
             <AppContent
-              toggleNewListModal={toggleNewListModal}
+              openNewListModal={openNewListModal}
+              openUpdateListModal={openUpdateListModal}
               lists={lists}
               subscribeToListEvents={() => {
                 // subscribeToMore() returns an unsubscribe function
@@ -73,8 +93,7 @@ export default function Main() {
                     if (!subscriptionData.data) return prev;
                     const {
                       created,
-                      deleted,
-                      updated
+                      deleted
                     } = subscriptionData.data.listEvents;
                     if (created) {
                       const index = prev.lists.findIndex(
@@ -94,40 +113,37 @@ export default function Main() {
                             lists: prev.lists.concat(created)
                           };
                     } else if (deleted) {
-                      console.log("deleted:", deleted);
                       return {
                         lists: prev.lists.filter(
                           (list) => list.id !== deleted.id
                         )
                       };
-                    } else if (updated) {
-                      return {
-                        lists: prev.lists.map((list) =>
-                          list.id === updated.id
-                            ? {
-                                ...list,
-                                ...updated
-                              }
-                            : list
-                        )
-                      };
-                    } else {
-                      console.error(
-                        "Data subscription error. Received subscription data" +
-                          "but it wasn't in the expected shape. Received:",
-                        subscriptionData.data
-                      );
-                      return prev;
                     }
+                    // No need to explicitly handle 'updated'. Already works
+                    // like magic. TODO: Why???????
+                    // https://github.com/apollographql/apollo-client/issues/3480
+                    return { lists: prev.lists };
                   }
                 });
               }}
             />
-            <CreateNewListModal
-              isVisible={newListModalIsVisible}
-              closeModal={() => setNewListModalVisibility(false)}
-              lists={lists}
-            />
+            {newListModalIsVisible && (
+              <CreateNewListModal
+                closeModal={() => setNewListModalVisibility(false)}
+                lists={lists}
+              />
+            )}
+            {updateListModalState.list && updateListModalState.visible && (
+              <UpdateListModal
+                list={updateListModalState.list}
+                closeModal={() =>
+                  setUpdateListModalState({
+                    visible: false,
+                    list: null
+                  })
+                }
+              />
+            )}
           </StyledMain>
         );
       }}

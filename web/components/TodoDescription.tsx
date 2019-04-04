@@ -47,7 +47,7 @@ export default function TodoDescription({
   const [isEditing, setEditingStatus] = useState(false);
   const [pendingDesc, setPendingDesc] = useState(todo.description);
 
-  useEscapeKeyListener(isEditing, setEditingStatus);
+  useEscapeKeyListener(() => setEditingStatus(false), isEditing);
 
   // Run this every time the user selects a different todo.
   useEffect(() => {

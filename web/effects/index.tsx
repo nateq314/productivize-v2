@@ -1,32 +1,36 @@
 import { useEffect } from "react";
 
-export function useEscapeKeyListener(active: boolean, closeModal: () => void) {
+export function useEscapeKeyListener(closeModal: () => void, active?: boolean) {
   const closeModalKeyboardEventListener = (e: KeyboardEvent) => {
     if (e.key == "Escape") {
       closeModal();
     }
   };
 
-  useEffect(() => {
-    if (active) {
-      document.addEventListener(
-        "keydown",
-        closeModalKeyboardEventListener,
-        false
-      );
-    }
-    return () => {
-      document.removeEventListener(
-        "keydown",
-        closeModalKeyboardEventListener,
-        false
-      );
-    };
-  }, [active]);
+  const hasActiveFlag = typeof active !== "undefined";
+
+  useEffect(
+    () => {
+      if ((hasActiveFlag && active === true) || !hasActiveFlag) {
+        document.addEventListener(
+          "keydown",
+          closeModalKeyboardEventListener,
+          false
+        );
+      }
+      return () => {
+        document.removeEventListener(
+          "keydown",
+          closeModalKeyboardEventListener,
+          false
+        );
+      };
+    },
+    hasActiveFlag ? [active] : []
+  );
 }
 
 export function useClickAwayListener(
-  visible: boolean,
   closeModal: () => void,
   avoidCloseClickRegion: React.RefObject<HTMLDivElement>
 ) {
@@ -40,18 +44,12 @@ export function useClickAwayListener(
   };
 
   useEffect(() => {
-    if (visible) {
-      document.addEventListener(
-        "mousedown",
-        closeModalMouseEventListener,
-        false
-      );
-      (avoidCloseClickRegion.current as HTMLDivElement).addEventListener(
-        "mousedown",
-        closeModalMouseEventListener,
-        false
-      );
-    }
+    document.addEventListener("mousedown", closeModalMouseEventListener, false);
+    (avoidCloseClickRegion.current as HTMLDivElement).addEventListener(
+      "mousedown",
+      closeModalMouseEventListener,
+      false
+    );
     return () => {
       document.removeEventListener("mousedown", closeModalMouseEventListener);
       (avoidCloseClickRegion.current as HTMLDivElement).removeEventListener(
@@ -59,7 +57,7 @@ export function useClickAwayListener(
         closeModalMouseEventListener
       );
     };
-  }, [visible]);
+  }, []);
 }
 
 export function useRenderLogger(compName: string, props?: any) {

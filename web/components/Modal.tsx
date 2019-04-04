@@ -7,21 +7,16 @@ const StyledModal = styled.div`
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  visibility: hidden;
+  opacity: 1;
+  visibility: visible;
   z-index: 2;
-  transition: 0.25s opacity;
+  /* transition: 0.25s opacity; */
   display: grid;
   grid-template-areas: "dialog";
   grid-template-columns: auto;
   grid-template-rows: auto;
   align-items: center;
   justify-items: center;
-
-  &.visible {
-    visibility: visible;
-    opacity: 1;
-  }
 
   & > * {
     grid-area: dialog;
@@ -34,16 +29,15 @@ const StyledModal = styled.div`
 interface ModalProps {
   children: React.ReactNode;
   closeModal: () => void;
-  visible: boolean;
 }
 
-export default function Modal({ children, closeModal, visible }: ModalProps) {
+export default function Modal({ children, closeModal }: ModalProps) {
   const dialog = useRef<HTMLDivElement>(null);
-  useEscapeKeyListener(visible, closeModal);
-  useClickAwayListener(visible, closeModal, dialog);
+  useEscapeKeyListener(closeModal);
+  useClickAwayListener(closeModal, dialog);
 
   return (
-    <StyledModal className={`Modal ${visible ? "visible" : ""}`}>
+    <StyledModal className="Modal">
       <div className="Modal-dialog" ref={dialog}>
         {children}
       </div>

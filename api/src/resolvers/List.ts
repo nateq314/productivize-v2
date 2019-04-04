@@ -9,12 +9,16 @@ export default {
       .doc(list.id)
       .collection("todos")
       .get();
-    return querySnapshot.docs.map(
+
+    const todos = querySnapshot.docs.map(
       (doc) =>
         ({
           ...doc.data(),
+          list_id: list.id,
           id: doc.id
         } as Todo)
     );
+
+    return todos;
   }
 };

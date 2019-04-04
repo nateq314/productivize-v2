@@ -2,19 +2,19 @@ import React, { useEffect, useRef, useState } from "react";
 import { Mutation } from "react-apollo";
 import Modal from "./Modal";
 import { FETCH_LISTS } from "../other/queries";
-import { CREATE_LIST } from "../other/mutations";
-import { TodoListsQueryResult, TodoList } from "./Main";
+import { UPDATE_LIST } from "../other/mutations";
+import { TodoList, TodoListsQueryResult } from "./Main";
 
-interface CreateNewListModalProps {
-  lists: TodoList[];
+interface UpdateListModalProps {
+  list: TodoList;
   closeModal: () => void;
 }
 
-export default function CreateNewListModal({
-  lists,
+export default function UpdateListModal({
+  list,
   closeModal
-}: CreateNewListModalProps) {
-  const [newListName, setNewListName] = useState("");
+}: UpdateListModalProps) {
+  const [newListName, setNewListName] = useState(list.name);
   const newListNameInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -24,47 +24,53 @@ export default function CreateNewListModal({
   return (
     <Mutation
       ignoreResults
-      mutation={CREATE_LIST}
-      update={(cache, { data: { createList } }) => {
-        // update() will still get called when the mutation result comes back,
-        // but we choose to only handle the initial (optimistic) update, and
-        // save the real update for the subscription handler. Hopefully this
-        // will reduce the likelihood of a data race.
+      mutation={UPDATE_LIST}
+      update={(cache, { data: { updateList } }) => {
         const listsData: TodoListsQueryResult | null = cache.readQuery({
           query: FETCH_LISTS
         });
-        const lists = listsData ? listsData.lists : [];
-        cache.writeQuery({
-          query: FETCH_LISTS,
-          data: {
-            lists: lists.concat(createList)
+        if (listsData) {
+          const { lists } = listsData;
+          const index = listsData.lists.findIndex((l) => l.id === list.id);
+          if (index >= 0) {
+            const newLists = [
+              ...lists.slice(0, index),
+              {
+                ...updateList,
+                todos: list.todos
+              },
+              ...lists.slice(index + 1)
+            ];
+            cache.writeQuery({
+              query: FETCH_LISTS,
+              data: {
+                lists: newLists
+              }
+            });
           }
-        });
+        }
       }}
     >
-      {(createList) => {
+      {(updateList) => {
         return (
           <Modal closeModal={closeModal}>
             <div onClick={closeModal}>Close the modal</div>
             <form
               onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                createList({
+                updateList({
                   variables: {
+                    id: list.id,
                     name: newListName
                   },
                   optimisticResponse: {
                     __typename: "Mutation",
-                    createList: {
-                      __typename: "List",
-                      id: "temp",
-                      name: newListName,
-                      order: lists.length + 1,
-                      todos: []
+                    updateList: {
+                      ...list,
+                      name: newListName
                     }
                   }
                 }).catch((error) => console.error(error));
-                setNewListName("");
                 closeModal();
               }}
             >

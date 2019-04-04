@@ -1,7 +1,7 @@
 import * as fbAdmin from "firebase-admin";
 import { ApolloError } from "apollo-server-express";
 import { Context } from "../apolloServer";
-import { List, Todo } from "../schema";
+import { List } from "../schema";
 
 export default {
   async current_user(parent: any, args: any, ctx: Context, info: any) {
@@ -16,23 +16,15 @@ export default {
         .collection("lists")
         .where("uid", "==", uid)
         .get();
-      return querySnapshot.docs.map((doc) => {
+      const lists = querySnapshot.docs.map((doc) => {
         const data = doc.data();
-        // In Cloud Firestore there is no such thing as an empty collection.
-        // If there aren't any items, the collection or subcollction won't exist.
-        const todos = data.todos
-          ? data.todos.map((todo: Todo) => ({
-              ...todo,
-              list_id: doc.id
-            }))
-          : [];
         const list = {
           ...data,
-          todos,
           id: doc.id
         } as List;
         return list;
       });
+      return lists;
     } catch (error) {
       console.error("Error retrieving lists:", error);
       throw new ApolloError(`Error getting document: ${error}`);

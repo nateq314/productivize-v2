@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styled from "styled-components";
 import { TodoList } from "./Main";
 import DeleteList from "./DeleteList";
@@ -28,7 +28,8 @@ const StyledTodoLists = styled.section`
 interface TodoListsProps {
   lists: TodoList[];
   selectedList: string;
-  toggleNewListModal: () => void;
+  openNewListModal: () => void;
+  openUpdateListModal: (list: TodoList) => void;
   setSelectedList: (listId: string) => void;
 }
 
@@ -36,12 +37,19 @@ export default function TodoLists({
   lists,
   selectedList,
   setSelectedList,
-  toggleNewListModal
+  openNewListModal,
+  openUpdateListModal
 }: TodoListsProps) {
+  const sortedLists = useMemo(() => {
+    return [...lists].sort((listA, listB) =>
+      listB.order > listA.order ? -1 : 1
+    );
+  }, [lists]);
+
   return (
     <StyledTodoLists>
       <ul>
-        {lists.map((list) => {
+        {sortedLists.map((list) => {
           const active = selectedList === list.id;
           return (
             <li key={list.id} className={active ? "active" : ""}>
@@ -49,11 +57,12 @@ export default function TodoLists({
               <DeleteList lists={lists} listId={list.id}>
                 {(deleteList) => <span onClick={deleteList}> Delete</span>}
               </DeleteList>
+              <span onClick={() => openUpdateListModal(list)}> Update</span>
             </li>
           );
         })}
       </ul>
-      <div className="add_new" onClick={toggleNewListModal}>
+      <div className="add_new" onClick={openNewListModal}>
         Add New List
       </div>
     </StyledTodoLists>

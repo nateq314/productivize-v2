@@ -11,8 +11,8 @@ export const FETCH_CURRENT_USER = gql`
 `;
 
 export const FETCH_LIST = gql`
-  query FetchList($listId: String!) {
-    list(listId: $listId) {
+  query FetchList($id: String!) {
+    fetchList(id: $id) {
       id
       name
       order

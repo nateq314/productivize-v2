@@ -29,6 +29,28 @@ export const DELETE_LIST = gql`
   }
 `;
 
+export const UPDATE_LIST = gql`
+  mutation UpdateList($id: ID!, $name: String, $order: Int) {
+    updateList(id: $id, name: $name, order: $order) {
+      id
+      name
+      order
+      todos {
+        id
+        added_on
+        content
+        completed
+        completed_on
+        deadline
+        description
+        important
+        order
+        remind_on
+      }
+    }
+  }
+`;
+
 export const CREATE_TODO = gql`
   mutation CreateTodo(
     $content: String!

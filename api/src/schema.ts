@@ -28,7 +28,7 @@ const schema = gql`
     id: ID!
     name: String!
     order: Int!
-    todos: [Todo]
+    todos: [Todo!]!
   }
 
   type ListMutation {

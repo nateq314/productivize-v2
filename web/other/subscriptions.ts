@@ -7,7 +7,6 @@ export interface ListEventsSubscriptionData {
       listEvents: {
         created?: TodoList;
         deleted?: { id: string };
-        updated?: TodoList;
       };
     };
   };
@@ -43,9 +42,6 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
         id
         name
         order
-        todos {
-          id
-        }
       }
     }
   }
