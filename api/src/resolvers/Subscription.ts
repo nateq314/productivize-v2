@@ -32,22 +32,22 @@ function resolve(payload: any) {
 
 export default Object.entries({
   listEvents: {
-    // subscribe: () => pubsub.asyncIterator(LIST_EVENTS)
     subscribe: withFilter(
       () => pubsub.asyncIterator(LIST_EVENTS),
       (payload: any, variables: any, context: any, info: any) => {
-        // TODO: find a cleaner way to do this
-        let mutation_uid = "";
-        const { created, deleted, updated } = payload;
-        if (created) mutation_uid = created.uid;
-        else if (deleted) mutation_uid = deleted.uid;
-        else if (updated) mutation_uid = updated.uid;
-        return mutation_uid === context.connection.context.currentUserUID;
+        const { uid } = payload;
+        return uid === context.connection.context.currentUserUID;
       }
     )
   },
   todoEvents: {
-    subscribe: () => pubsub.asyncIterator(TODO_EVENTS)
+    subscribe: withFilter(
+      () => pubsub.asyncIterator(TODO_EVENTS),
+      (payload: any, variables: any, context: any, info: any) => {
+        const { uid } = payload;
+        return uid === context.connection.context.currentUserUID;
+      }
+    )
   }
 }).reduce((resolvers: any, [key, value]) => {
   resolvers[key] = {

@@ -1,7 +1,7 @@
 import * as fbAdmin from "firebase-admin";
 import { ApolloError } from "apollo-server-express";
 import { Context } from "../apolloServer";
-import { List } from "../schema";
+import { ListDB } from "../schema";
 
 export default {
   async current_user(parent: any, args: any, ctx: Context, info: any) {
@@ -21,7 +21,7 @@ export default {
         const list = {
           ...data,
           id: doc.id
-        } as List;
+        } as ListDB & { id: string };
         return list;
       });
       return lists;

@@ -1,10 +1,13 @@
 import { gql } from "apollo-server-express";
 
-export interface List {
-  id: string;
+export interface ListDB {
   name: string;
   order: number;
   uid: string;
+}
+
+export interface ListGQL extends ListDB {
+  id: string;
   todos: Todo[];
 }
 

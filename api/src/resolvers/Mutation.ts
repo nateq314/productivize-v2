@@ -8,7 +8,7 @@ import {
   createUserSessionToken,
   verifyUserSessionToken
 } from "../firebase";
-import { List } from "../schema";
+import { ListGQL, ListDB } from "../schema";
 import { pubsub, LIST_EVENTS, TODO_EVENTS } from "./Subscription";
 
 interface ILogin {
@@ -35,15 +35,15 @@ export default {
         .add({
           name: args.name,
           order: currUserLists.size + 1,
-          uid: (ctx.user as fbAdmin.auth.DecodedIdToken).uid
+          uid: current_uid
         });
       const newListDocSnapshot = await newListDocument.get();
-      const created = {
-        ...newListDocSnapshot.data(),
+      const created: ListGQL = {
+        ...(newListDocSnapshot.data() as ListDB),
         id: newListDocument.id,
         todos: []
       };
-      pubsub.publish(LIST_EVENTS, { created, current_uid });
+      pubsub.publish(LIST_EVENTS, { created, uid: created.uid });
       return created;
     } catch (error) {
       console.error(error);
@@ -63,7 +63,7 @@ export default {
         .collection("lists")
         .doc(args.id);
       const todoListDocSnapshot = await todoListDocRef.get();
-      if ((todoListDocSnapshot.data() as List).uid !== current_uid) {
+      if ((todoListDocSnapshot.data() as ListDB).uid !== current_uid) {
         // TODO: test this
         throw new ForbiddenError("You are not authorized to touch this list.");
       }
@@ -72,10 +72,10 @@ export default {
       // (documents with no fields but with a todos subcollection)
       await todoListDocRef.delete();
       const deleted = {
-        ...todoListDocSnapshot.data(),
+        ...(todoListDocSnapshot.data() as ListDB),
         id: args.id
       };
-      pubsub.publish(LIST_EVENTS, { deleted, current_uid });
+      pubsub.publish(LIST_EVENTS, { deleted, uid: deleted.uid });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -95,7 +95,7 @@ export default {
         .collection("lists")
         .doc(args.id);
       const todoListDocSnapshot = await todoListDocRef.get();
-      if ((todoListDocSnapshot.data() as List).uid !== current_uid) {
+      if ((todoListDocSnapshot.data() as ListDB).uid !== current_uid) {
         // TODO: test this
         throw new ForbiddenError(
           "Not authorized to touch anything in this list."
@@ -109,12 +109,12 @@ export default {
       await todoListDocRef.update(updates);
 
       const updatedTodoListDocSnapshot = await todoListDocRef.get();
-      const newTodoListData = updatedTodoListDocSnapshot.data() as List;
+      const newTodoListData = updatedTodoListDocSnapshot.data() as ListDB;
       const updated = {
         ...newTodoListData,
         id: args.id
       };
-      pubsub.publish(LIST_EVENTS, { updated, current_uid });
+      pubsub.publish(LIST_EVENTS, { updated, uid: updated.uid });
       return updated;
     } catch (error) {
       console.error(error);
@@ -128,11 +128,13 @@ export default {
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
-      const todosColRef = fbAdmin
+      const todoListDocRef = fbAdmin
         .firestore()
         .collection("lists")
-        .doc(args.listId)
-        .collection("todos");
+        .doc(args.listId);
+      const todosColRef = todoListDocRef.collection("todos");
+      const todoListDocSnapshot = await todoListDocRef.get();
+      const { uid } = todoListDocSnapshot.data() as ListDB;
       const currTodosSnapshot = await todosColRef.get();
       const newTodoDocRef = await todosColRef.add({
         added_on: new Date(),
@@ -151,7 +153,7 @@ export default {
         id: newTodoDocRef.id,
         list_id: args.listId
       };
-      pubsub.publish(TODO_EVENTS, { created });
+      pubsub.publish(TODO_EVENTS, { created, uid });
       return created;
     } catch (error) {
       console.error(error);
@@ -170,10 +172,8 @@ export default {
         .collection("lists")
         .doc(args.listId);
       const todoListDocSnapshot = await todoListDocRef.get();
-      if (
-        (todoListDocSnapshot.data() as List).uid !==
-        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
-      ) {
+      const { uid } = todoListDocSnapshot.data() as ListDB;
+      if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
         // TODO: test this
         throw new ForbiddenError(
           "Not authorized to touch anything in this list."
@@ -186,7 +186,7 @@ export default {
         list_id: args.listId
       };
       await todoDocRef.delete();
-      pubsub.publish(TODO_EVENTS, { deleted });
+      pubsub.publish(TODO_EVENTS, { deleted, uid });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -207,10 +207,8 @@ export default {
         .collection("lists")
         .doc(args.listId);
       const todoListDocSnapshot = await todoListDocRef.get();
-      if (
-        (todoListDocSnapshot.data() as List).uid !==
-        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
-      ) {
+      const { uid } = todoListDocSnapshot.data() as ListDB;
+      if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
         // TODO: test this
         throw new ForbiddenError(
           "Not authorized to touch anything in this list."
@@ -240,7 +238,7 @@ export default {
         id: todoDocRef.id,
         list_id: args.listId
       };
-      pubsub.publish(TODO_EVENTS, { updated });
+      pubsub.publish(TODO_EVENTS, { updated, uid });
       return updated;
     } catch (error) {
       console.error(error);

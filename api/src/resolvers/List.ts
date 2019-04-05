@@ -1,8 +1,8 @@
 import * as fbAdmin from "firebase-admin";
-import { List, Todo } from "../schema";
+import { ListGQL, Todo } from "../schema";
 
 export default {
-  async todos(list: List) {
+  async todos(list: ListGQL) {
     const querySnapshot = await fbAdmin
       .firestore()
       .collection("lists")
