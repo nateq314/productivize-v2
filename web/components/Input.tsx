@@ -49,7 +49,10 @@ export default function Input({
           {adornmentStart.node}
         </span>
       )}
-      <input className="input" {...props} />
+      <input
+        className={`input ${props.readOnly ? "readonly" : ""}`}
+        {...props}
+      />
       {adornmentEnd && (
         <span className="adornment" onClick={adornmentEnd.onClick}>
           {adornmentEnd.node}

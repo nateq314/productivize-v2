@@ -8,12 +8,28 @@ import {
   createUserSessionToken,
   verifyUserSessionToken
 } from "../firebase";
-import { ListGQL, ListDB } from "../schema";
-import { pubsub, LIST_EVENTS, TODO_EVENTS } from "./Subscription";
+import { ListGQL, ListDB, TodoDB, TodoGQL } from "../schema";
+import { pubsub, LIST_EVENTS } from "./Subscription";
 
 interface ILogin {
   idToken?: string;
   session?: string;
+}
+
+function convertDateFieldsForPublishing(
+  todo: TodoDB & { id: string; list_id: string }
+): TodoGQL {
+  return {
+    ...todo,
+    added_on: todo.added_on.toDate().toISOString(),
+    completed_on: todo.completed_on
+      ? todo.completed_on.toDate().toISOString()
+      : undefined,
+    deadline: todo.deadline ? todo.deadline.toDate().toISOString() : undefined,
+    remind_on: todo.remind_on
+      ? todo.remind_on.toDate().toISOString()
+      : undefined
+  };
 }
 
 export default {
@@ -38,13 +54,13 @@ export default {
           uid: current_uid
         });
       const newListDocSnapshot = await newListDocument.get();
-      const created: ListGQL = {
+      const listCreated: ListGQL = {
         ...(newListDocSnapshot.data() as ListDB),
         id: newListDocument.id,
         todos: []
       };
-      pubsub.publish(LIST_EVENTS, { created, uid: created.uid });
-      return created;
+      pubsub.publish(LIST_EVENTS, { listCreated, uid: listCreated.uid });
+      return listCreated;
     } catch (error) {
       console.error(error);
       return { error: error.message };
@@ -71,11 +87,11 @@ export default {
       // delete() call will leave phantom documents in the database
       // (documents with no fields but with a todos subcollection)
       await todoListDocRef.delete();
-      const deleted = {
+      const listDeleted = {
         ...(todoListDocSnapshot.data() as ListDB),
         id: args.id
       };
-      pubsub.publish(LIST_EVENTS, { deleted, uid: deleted.uid });
+      pubsub.publish(LIST_EVENTS, { listDeleted, uid: listDeleted.uid });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -110,12 +126,12 @@ export default {
 
       const updatedTodoListDocSnapshot = await todoListDocRef.get();
       const newTodoListData = updatedTodoListDocSnapshot.data() as ListDB;
-      const updated = {
+      const listUpdated = {
         ...newTodoListData,
         id: args.id
       };
-      pubsub.publish(LIST_EVENTS, { updated, uid: updated.uid });
-      return updated;
+      pubsub.publish(LIST_EVENTS, { listUpdated, uid: listUpdated.uid });
+      return listUpdated;
     } catch (error) {
       console.error(error);
       return { error: error.message };
@@ -148,13 +164,17 @@ export default {
         remind_on: args.remind_on || null
       });
       const newTodoDocSnapshot = await newTodoDocRef.get();
-      const created = {
-        ...newTodoDocSnapshot.data(),
+      const newTodoData = newTodoDocSnapshot.data() as TodoDB;
+      const todoCreated = {
+        ...newTodoData,
         id: newTodoDocRef.id,
         list_id: args.listId
       };
-      pubsub.publish(TODO_EVENTS, { created, uid });
-      return created;
+      pubsub.publish(LIST_EVENTS, {
+        todoCreated: convertDateFieldsForPublishing(todoCreated),
+        uid
+      });
+      return todoCreated;
     } catch (error) {
       console.error(error);
       return { error: error.message };
@@ -180,13 +200,16 @@ export default {
         );
       }
       const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
-      const deleted = {
-        ...(await todoDocRef.get()).data(),
+      const todoDeleted = {
+        ...((await todoDocRef.get()).data() as TodoDB),
         id: todoDocRef.id,
         list_id: args.listId
       };
       await todoDocRef.delete();
-      pubsub.publish(TODO_EVENTS, { deleted, uid });
+      pubsub.publish(LIST_EVENTS, {
+        todoDeleted: convertDateFieldsForPublishing(todoDeleted),
+        uid
+      });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -233,13 +256,16 @@ export default {
 
       await todoDocRef.update(updates);
       const updatedTodoDocSnapshot = await todoDocRef.get();
-      const updated = {
-        ...updatedTodoDocSnapshot.data(),
+      const todoUpdated = {
+        ...(updatedTodoDocSnapshot.data() as TodoDB),
         id: todoDocRef.id,
         list_id: args.listId
       };
-      pubsub.publish(TODO_EVENTS, { updated, uid });
-      return updated;
+      pubsub.publish(LIST_EVENTS, {
+        todoUpdated: convertDateFieldsForPublishing(todoUpdated),
+        uid
+      });
+      return todoUpdated;
     } catch (error) {
       console.error(error);
       return { error: error.message };

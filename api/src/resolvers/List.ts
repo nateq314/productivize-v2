@@ -1,5 +1,5 @@
 import * as fbAdmin from "firebase-admin";
-import { ListGQL, Todo } from "../schema";
+import { ListGQL, TodoDB } from "../schema";
 
 export default {
   async todos(list: ListGQL) {
@@ -10,14 +10,11 @@ export default {
       .collection("todos")
       .get();
 
-    const todos = querySnapshot.docs.map(
-      (doc) =>
-        ({
-          ...doc.data(),
-          list_id: list.id,
-          id: doc.id
-        } as Todo)
-    );
+    const todos = querySnapshot.docs.map((doc) => ({
+      ...(doc.data() as TodoDB),
+      list_id: list.id,
+      id: doc.id
+    }));
 
     return todos;
   }

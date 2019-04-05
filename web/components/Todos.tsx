@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import CreateNewTodo from "./CreateNewTodo";
@@ -26,11 +26,17 @@ export default function Todos({
   todos
 }: TodosProps) {
   const [currEditing, setCurrEditing] = useState<string | null>(null);
+  const sortedTodos = useMemo(() => {
+    return [...todos].sort((todoA, todoB) =>
+      todoB.order > todoA.order ? -1 : 1
+    );
+  }, [todos]);
+
   return (
     <StyledTodos>
       <CreateNewTodo selectedList={selectedList} />
       <ul>
-        {todos.map((todo) => {
+        {sortedTodos.map((todo) => {
           const isEditing = currEditing === todo.id;
           const isSelected = selectedTodoId === todo.id;
           return (

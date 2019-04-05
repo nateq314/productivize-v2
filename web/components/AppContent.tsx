@@ -31,15 +31,20 @@ export default function AppContent(props: AppContentProps) {
   const selectedList = lists.find(
     (list) => selectedListId === list.id
   ) as TodoList;
+  const todos = selectedList ? selectedList.todos : [];
+  const selectedTodo = todos.find((t) => t.id === selectedTodoId) as Todo;
 
   if (!selectedList) {
-    // The one that was selected got deleted. It's okay to do the below since
+    // The list that was selected got deleted. It's okay to do the below since
     // it's guaranteed that there will always be at least one list.
     setSelectedListId(lists[0].id);
     setSelectedTodoId(null);
   }
 
-  const todos = selectedList ? selectedList.todos : [];
+  if (selectedTodoId && !selectedTodo) {
+    // The todo that was selected got deleted.
+    setSelectedTodoId(null);
+  }
 
   // note this returns the unsubscribe function, to be called at component unmount
   // TODO: unsubscribe() below won't get run on logout or closing browser tab or
@@ -73,10 +78,7 @@ export default function AppContent(props: AppContentProps) {
         setSelectedTodoId={setSelectedTodoId}
       />
       {selectedTodoId && (
-        <TodoDetails
-          selectedList={selectedList}
-          todo={todos.find((t) => t.id === selectedTodoId) as Todo}
-        />
+        <TodoDetails selectedList={selectedList} todo={selectedTodo} />
       )}
     </StyledAppContent>
   );

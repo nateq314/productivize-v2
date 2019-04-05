@@ -24,7 +24,6 @@ export const pubsub = new GooglePubSub(
 );
 
 export const LIST_EVENTS = "list_events";
-export const TODO_EVENTS = "todo_events";
 
 function resolve(payload: any) {
   return payload;
@@ -34,15 +33,6 @@ export default Object.entries({
   listEvents: {
     subscribe: withFilter(
       () => pubsub.asyncIterator(LIST_EVENTS),
-      (payload: any, variables: any, context: any, info: any) => {
-        const { uid } = payload;
-        return uid === context.connection.context.currentUserUID;
-      }
-    )
-  },
-  todoEvents: {
-    subscribe: withFilter(
-      () => pubsub.asyncIterator(TODO_EVENTS),
       (payload: any, variables: any, context: any, info: any) => {
         const { uid } = payload;
         return uid === context.connection.context.currentUserUID;

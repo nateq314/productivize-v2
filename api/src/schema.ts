@@ -1,4 +1,5 @@
 import { gql } from "apollo-server-express";
+import { firestore } from "firebase-admin";
 
 export interface ListDB {
   name: string;
@@ -8,20 +9,33 @@ export interface ListDB {
 
 export interface ListGQL extends ListDB {
   id: string;
-  todos: Todo[];
+  todos: TodoGQL[];
 }
 
-export interface Todo {
-  id: string;
-  list_id?: string;
+export interface TodoDB {
+  added_on: firestore.Timestamp;
   completed: boolean;
+  completed_on?: firestore.Timestamp;
   content: string;
-  deadline?: number;
-  added_on?: number;
-  completed_on?: number;
+  deadline?: firestore.Timestamp;
   description: string;
   important: boolean;
   order: number;
+  remind_on?: firestore.Timestamp;
+}
+
+export interface TodoGQL {
+  id: string;
+  added_on: string;
+  list_id?: string;
+  completed: boolean;
+  completed_on?: string;
+  content: string;
+  deadline?: string;
+  description: string;
+  important: boolean;
+  order: number;
+  remind_on?: string;
 }
 
 const schema = gql`
@@ -34,10 +48,13 @@ const schema = gql`
     todos: [Todo!]!
   }
 
-  type ListMutation {
-    created: List
-    deleted: List
-    updated: List
+  type ListMutationEvent {
+    listCreated: List
+    listDeleted: List
+    listUpdated: List
+    todoCreated: Todo
+    todoDeleted: Todo
+    todoUpdated: Todo
   }
 
   type LoginResult {
@@ -83,8 +100,7 @@ const schema = gql`
   }
 
   type Subscription {
-    listEvents: ListMutation!
-    todoEvents: TodoMutation!
+    listEvents: ListMutationEvent!
   }
 
   type Todo {
@@ -99,12 +115,6 @@ const schema = gql`
     important: Boolean!
     order: Int!
     remind_on: DateTime
-  }
-
-  type TodoMutation {
-    created: Todo
-    deleted: Todo
-    updated: Todo
   }
 
   type User {

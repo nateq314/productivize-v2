@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Mutation } from "react-apollo";
 import styled from "styled-components";
 import { CREATE_TODO } from "../other/mutations";
 import { TodoList } from "./Main";
 import Input from "./Input";
 
-const StyledCreateNewTodo = styled.form``;
+const StyledCreateNewTodo = styled.form`
+  input.readonly {
+    background-color: rgba(255, 0, 0, 0.2);
+  }
+`;
 
 interface NewTodoInputProps {
   selectedList: TodoList;
@@ -13,6 +17,7 @@ interface NewTodoInputProps {
 
 export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
   const [content, setContent] = useState("");
+  const [readonly, setReadonly] = useState(false);
   const optimisticResponse = {
     __typename: "Mutation",
     createTodo: {
@@ -30,6 +35,12 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
       remind_on: null
     }
   };
+
+  useEffect(() => {
+    if (!selectedList.todos.find((todo) => todo.id === "temp")) {
+      setReadonly(false);
+    }
+  }, [selectedList.todos]);
 
   return (
     <Mutation
@@ -65,12 +76,14 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
               };
               createTodo(args);
               setContent("");
+              setReadonly(true);
             }}
           >
             <Input
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setContent(e.target.value);
               }}
+              readOnly={readonly}
               value={content}
             />
           </StyledCreateNewTodo>

@@ -5,20 +5,12 @@ export interface ListEventsSubscriptionData {
   subscriptionData: {
     data?: {
       listEvents: {
-        created?: TodoList;
-        deleted?: { id: string };
-      };
-    };
-  };
-}
-
-export interface TodoEventsSubscriptionData {
-  subscriptionData: {
-    data?: {
-      todoEvents: {
-        created?: Todo;
-        deleted?: Pick<Todo, "id" | "list_id">;
-        updated?: Todo;
+        listCreated?: TodoList;
+        listDeleted?: { id: string };
+        listUpdated?: TodoList;
+        todoCreated?: Todo;
+        todoDeleted?: { id: string; list_id: string };
+        todoUpdated?: Todo;
       };
     };
   };
@@ -27,7 +19,7 @@ export interface TodoEventsSubscriptionData {
 export const LIST_EVENTS_SUBSCRIPTION = gql`
   subscription listEvents {
     listEvents {
-      created {
+      listCreated {
         id
         name
         order
@@ -35,22 +27,15 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
           id
         }
       }
-      deleted {
+      listDeleted {
         id
       }
-      updated {
+      listUpdated {
         id
         name
         order
       }
-    }
-  }
-`;
-
-export const TODO_EVENTS_SUBSCRIPTION = gql`
-  subscription todoEvents {
-    todoEvents {
-      created {
+      todoCreated {
         id
         list_id
         added_on
@@ -63,11 +48,11 @@ export const TODO_EVENTS_SUBSCRIPTION = gql`
         order
         remind_on
       }
-      deleted {
+      todoDeleted {
         id
         list_id
       }
-      updated {
+      todoUpdated {
         id
         list_id
         added_on

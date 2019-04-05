@@ -39,6 +39,7 @@ export interface Todo {
   deadline: string | null;
   description: string;
   important: boolean;
+  order: number;
   remind_on: string | null;
 }
 
@@ -49,12 +50,10 @@ interface UpdateListModalState {
 
 export default function Main() {
   const [newListModalIsVisible, setNewListModalVisibility] = useState(false);
-  const [updateListModalState, setUpdateListModalState] = useState<
-    UpdateListModalState
-  >({
+  const [updateListModalState, setUpdateListModalState] = useState({
     visible: false,
     list: null
-  });
+  } as UpdateListModalState);
 
   const openNewListModal = () => {
     setNewListModalVisibility(true);
@@ -82,50 +81,13 @@ export default function Main() {
               openNewListModal={openNewListModal}
               openUpdateListModal={openUpdateListModal}
               lists={lists}
-              subscribeToListEvents={() => {
-                // subscribeToMore() returns an unsubscribe function
-                return subscribeToMore({
+              // subscribeToMore() returns an unsubscribe function
+              subscribeToListEvents={() =>
+                subscribeToMore({
                   document: LIST_EVENTS_SUBSCRIPTION,
-                  updateQuery: (
-                    prev: TodoListsQueryResult,
-                    { subscriptionData }: ListEventsSubscriptionData
-                  ): TodoListsQueryResult => {
-                    if (!subscriptionData.data) return prev;
-                    const {
-                      created,
-                      deleted
-                    } = subscriptionData.data.listEvents;
-                    if (created) {
-                      const index = prev.lists.findIndex(
-                        (list) => list.id === created.id || list.id === "temp"
-                      );
-                      return index >= 0
-                        ? // Already added
-                          {
-                            lists: [
-                              ...prev.lists.slice(0, index),
-                              created,
-                              ...prev.lists.slice(index + 1)
-                            ]
-                          }
-                        : // Or this could be another terminal
-                          {
-                            lists: prev.lists.concat(created)
-                          };
-                    } else if (deleted) {
-                      return {
-                        lists: prev.lists.filter(
-                          (list) => list.id !== deleted.id
-                        )
-                      };
-                    }
-                    // No need to explicitly handle 'updated'. Already works
-                    // like magic. TODO: Why???????
-                    // https://github.com/apollographql/apollo-client/issues/3480
-                    return { lists: prev.lists };
-                  }
-                });
-              }}
+                  updateQuery
+                })
+              }
             />
             {newListModalIsVisible && (
               <CreateNewListModal
@@ -149,4 +111,96 @@ export default function Main() {
       }}
     </Query>
   );
+}
+
+function updateQuery(
+  prev: TodoListsQueryResult,
+  { subscriptionData }: ListEventsSubscriptionData
+): TodoListsQueryResult {
+  if (!subscriptionData.data) return prev;
+  const {
+    listCreated,
+    listDeleted,
+    todoCreated,
+    todoDeleted
+  } = subscriptionData.data.listEvents;
+  if (todoCreated) {
+    const listIndex = prev.lists.findIndex(
+      (list) => list.id === todoCreated.list_id
+    );
+    if (listIndex >= 0) {
+      // If the list exists
+      const todoIndex = prev.lists[listIndex].todos.findIndex(
+        (todo) => todo.id === todoCreated.id
+      );
+      if (todoIndex === -1) {
+        // If the todo does NOT exist
+        const updatedList = {
+          ...prev.lists[listIndex],
+          todos: prev.lists[listIndex].todos.concat(todoCreated)
+        };
+        return {
+          lists: [
+            ...prev.lists.slice(0, listIndex),
+            updatedList,
+            ...prev.lists.slice(listIndex + 1)
+          ]
+        };
+      }
+    }
+    return { lists: prev.lists };
+  } else if (todoDeleted) {
+    const listIndex = prev.lists.findIndex(
+      (list) => list.id === todoDeleted.list_id
+    );
+    if (listIndex >= 0) {
+      // If the list exists
+      const todoIndex = prev.lists[listIndex].todos.findIndex(
+        (todo) => todo.id === todoDeleted.id
+      );
+      if (todoIndex >= 0) {
+        // If the todo still exists
+        const updatedList = {
+          ...prev.lists[listIndex],
+          todos: [
+            ...prev.lists[listIndex].todos.slice(0, todoIndex),
+            ...prev.lists[listIndex].todos.slice(todoIndex + 1)
+          ]
+        };
+        return {
+          lists: [
+            ...prev.lists.slice(0, listIndex),
+            updatedList,
+            ...prev.lists.slice(listIndex + 1)
+          ]
+        };
+      }
+    }
+    return { lists: prev.lists };
+  } else if (listCreated) {
+    const index = prev.lists.findIndex(
+      (list) => list.id === listCreated.id || list.id === "temp"
+    );
+    return index >= 0
+      ? // Already added
+        {
+          lists: [
+            ...prev.lists.slice(0, index),
+            listCreated,
+            ...prev.lists.slice(index + 1)
+          ]
+        }
+      : // Or this could be another terminal
+        {
+          lists: prev.lists.concat(listCreated)
+        };
+  } else if (listDeleted) {
+    return {
+      lists: prev.lists.filter((list) => list.id !== listDeleted.id)
+    };
+  }
+  // No need to explicitly handle 'listUpdated' or 'todoUpdated'.
+  // Already works like magic. TODO: Why???????
+  // https://github.com/apollographql/apollo-client/issues/3480
+  return { lists: prev.lists };
 }
