@@ -13,7 +13,24 @@ const app = express();
 
 const apolloServer = new ApolloServer({
   typeDefs,
-  resolvers
+  resolvers,
+  subscriptions: {
+    onConnect: (connectionParams: any, webSocket) => {
+      if (connectionParams.wsAuth) {
+        // The resolution of the below promise will be the value of
+        // `context.connection.context` in the withFilter() predicate function.
+        // We use this to determine whether or not a given publication belongs
+        // to (ought to be received by) a user.
+
+        // TODO: implement full-blown authentication for WS connection. Receive
+        // an idToken and verify it with the Firebase admin API.
+        return Promise.resolve({
+          currentUserUID: connectionParams.wsAuth.currentUserUID
+        });
+      }
+      throw new Error("Missing uid!");
+    }
+  }
 });
 
 apolloServer.applyMiddleware({ app });

@@ -20,7 +20,11 @@ if (!isBrowser) {
 export const LINK_URI =
   "https://us-central1-focus-champion-231019.cloudfunctions.net/api/graphql";
 
-function create(initialState: any, linkOptions: HttpLink.Options) {
+function create(
+  initialState: any,
+  linkOptions: HttpLink.Options,
+  wsAuth: { [key: string]: any }
+) {
   const httpLink = new HttpLink({
     uri: LINK_URI,
     credentials: "include",
@@ -37,7 +41,8 @@ function create(initialState: any, linkOptions: HttpLink.Options) {
         new WebSocketLink({
           uri: "wss://localhost:3000/graphql",
           options: {
-            reconnect: true
+            reconnect: true,
+            connectionParams: { wsAuth }
           }
         }),
         httpLink
@@ -54,17 +59,18 @@ function create(initialState: any, linkOptions: HttpLink.Options) {
 
 export default function initApollo(
   initialState?: any,
-  linkOptions: HttpLink.Options = {}
+  linkOptions: HttpLink.Options = {},
+  wsAuth: { [key: string]: any } = {}
 ) {
   // Make sure to create a new client for every server-side request so that data
   // isn't shared between connections (which would be bad)
   if (!isBrowser) {
-    return create(initialState, linkOptions);
+    return create(initialState, linkOptions, wsAuth);
   }
 
   // Reuse client on the client-side
   if (!apolloClient) {
-    apolloClient = create(initialState, linkOptions);
+    apolloClient = create(initialState, linkOptions, wsAuth);
   }
   return apolloClient;
 }

@@ -39,7 +39,7 @@ export default function AppContent(props: AppContentProps) {
     setSelectedTodoId(null);
   }
 
-  const todos = selectedList.todos;
+  const todos = selectedList ? selectedList.todos : [];
 
   // note this returns the unsubscribe function, to be called at component unmount
   // TODO: unsubscribe() below won't get run on logout or closing browser tab or

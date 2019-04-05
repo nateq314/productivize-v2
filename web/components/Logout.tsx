@@ -16,8 +16,11 @@ function Login() {
           {(logout) => (
             <button
               onClick={async () => {
+                // sign out from firebase
                 await firebase.auth().signOut();
+                // remove the API <-> CLIENT session token
                 const response = await logout();
+                // TODO: Remove the API <-> SSR session token
                 console.log("logout response:", response);
                 location.assign(`${location.href}?logout=true`);
               }}

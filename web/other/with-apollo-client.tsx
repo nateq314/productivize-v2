@@ -155,7 +155,12 @@ export default (App: any) => {
 
     constructor(props: ApolloProps) {
       super(props);
-      this.apolloClient = initApollo(props.apolloState);
+      const currentUser = props.apolloState.ROOT_QUERY.current_user;
+      let currentUserUID = "";
+      if (currentUser) {
+        currentUserUID = (currentUser as { id: string }).id.split(":")[1];
+      }
+      this.apolloClient = initApollo(props.apolloState, {}, { currentUserUID });
     }
 
     render() {

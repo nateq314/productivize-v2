@@ -23,10 +23,11 @@ export default {
   async createList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
+      const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
       const currUserLists = await fbAdmin
         .firestore()
         .collection("lists")
-        .where("uid", "==", (ctx.user as fbAdmin.auth.DecodedIdToken).uid)
+        .where("uid", "==", current_uid)
         .get();
       const newListDocument = await fbAdmin
         .firestore()
@@ -42,7 +43,7 @@ export default {
         id: newListDocument.id,
         todos: []
       };
-      pubsub.publish(LIST_EVENTS, { created });
+      pubsub.publish(LIST_EVENTS, { created, current_uid });
       return created;
     } catch (error) {
       console.error(error);
@@ -56,24 +57,25 @@ export default {
   async deleteList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
+      const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
       const todoListDocRef = fbAdmin
         .firestore()
         .collection("lists")
         .doc(args.id);
       const todoListDocSnapshot = await todoListDocRef.get();
-      if (
-        (todoListDocSnapshot.data() as List).uid !==
-        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
-      ) {
+      if ((todoListDocSnapshot.data() as List).uid !== current_uid) {
         // TODO: test this
         throw new ForbiddenError("You are not authorized to touch this list.");
       }
+      // TODO: Also delete the todos subcollection! Otherwise the below
+      // delete() call will leave phantom documents in the database
+      // (documents with no fields but with a todos subcollection)
       await todoListDocRef.delete();
       const deleted = {
         ...todoListDocSnapshot.data(),
         id: args.id
       };
-      pubsub.publish(LIST_EVENTS, { deleted });
+      pubsub.publish(LIST_EVENTS, { deleted, current_uid });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -87,15 +89,13 @@ export default {
   async updateList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
+      const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
       const todoListDocRef = fbAdmin
         .firestore()
         .collection("lists")
         .doc(args.id);
       const todoListDocSnapshot = await todoListDocRef.get();
-      if (
-        (todoListDocSnapshot.data() as List).uid !==
-        (ctx.user as fbAdmin.auth.DecodedIdToken).uid
-      ) {
+      if ((todoListDocSnapshot.data() as List).uid !== current_uid) {
         // TODO: test this
         throw new ForbiddenError(
           "Not authorized to touch anything in this list."
@@ -114,7 +114,7 @@ export default {
         ...newTodoListData,
         id: args.id
       };
-      pubsub.publish(LIST_EVENTS, { updated });
+      pubsub.publish(LIST_EVENTS, { updated, current_uid });
       return updated;
     } catch (error) {
       console.error(error);
@@ -302,16 +302,16 @@ export default {
     const sessionCookie = ctx.req.cookies.session || "";
     if (sessionCookie) {
       ctx.res.clearCookie("session");
-      if (ctx.user) {
-        try {
-          await fbAdmin.auth().revokeRefreshTokens(ctx.user.sub);
-          return {};
-        } catch (error) {
-          return {
-            error
-          };
-        }
-      }
+      // if (ctx.user) {
+      //   try {
+      //     await fbAdmin.auth().revokeRefreshTokens(ctx.user.sub);
+      //     return {};
+      //   } catch (error) {
+      //     return {
+      //       error
+      //     };
+      //   }
+      // }
     }
     return {
       error: "Session cookie is invalid, or no session to log out of"
