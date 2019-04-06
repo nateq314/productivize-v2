@@ -205,7 +205,26 @@ export default {
         id: todoDocRef.id,
         list_id: args.listId
       };
-      await todoDocRef.delete();
+
+      // Delete the document, then decrement the order of every todo that has an
+      // order greater than the one deleted.
+      // TODO: ALSO DO THIS FOR UPDATING, IN THE CASE THE ORDER FIELD IS CHANGED
+      // TODO: ALSO DO THIS FOR LIST DELETION & UPDATING
+      // TODO: REFLECT CHANGES ON FRONT END
+      await fbAdmin.firestore().runTransaction(async (tx) => {
+        const todosQuerySnapshot = await tx.get(
+          todoListDocRef
+            .collection("todos")
+            .where("order", ">", todoDeleted.order)
+        );
+
+        tx.delete(todoDocRef);
+        todosQuerySnapshot.forEach((todoDoc) => {
+          const order = (todoDoc.data() as TodoDB).order;
+          tx.update(todoDoc.ref, { order: order - 1 });
+        });
+      });
+
       pubsub.publish(LIST_EVENTS, {
         todoDeleted: convertDateFieldsForPublishing(todoDeleted),
         uid
@@ -237,7 +256,7 @@ export default {
           "Not authorized to touch anything in this list."
         );
       }
-      const { content } = args;
+      const { content, deadline, remind_on, order } = args;
       const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
       const updates: any = {};
 
@@ -248,13 +267,31 @@ export default {
         else updates.completed_on = null;
       }
       if (content) updates.content = content;
-      if (args.hasOwnProperty("deadline")) updates.deadline = args.deadline;
+      if (deadline) updates.deadline = deadline;
       if (args.hasOwnProperty("description"))
         updates.description = args.description;
       if (args.hasOwnProperty("important")) updates.important = args.important;
-      if (args.hasOwnProperty("remind_on")) updates.remind_on = args.remind_on;
+      if (remind_on) updates.remind_on = remind_on;
 
-      await todoDocRef.update(updates);
+      if (!order) {
+        // Updates to anything besides 'order' don't affect other todos. Just
+        // go ahead and do the update.
+        await todoDocRef.update(updates);
+      } else {
+        // Updating 'order' means we have to increment the order of all other
+        // todos with an order greater than the one being updated.
+        // TODO: implement this on FE and test it
+        await fbAdmin.firestore().runTransaction(async (tx) => {
+          const todosQuerySnapshot = await tx.get(
+            todoListDocRef.collection("todos").where("order", ">=", order)
+          );
+          tx.update(todoDocRef, updates);
+          todosQuerySnapshot.forEach((todo) => {
+            const newOrder = (todo.data() as TodoDB).order + 1;
+            tx.update(todo.ref, { order: newOrder });
+          });
+        });
+      }
       const updatedTodoDocSnapshot = await todoDocRef.get();
       const todoUpdated = {
         ...(updatedTodoDocSnapshot.data() as TodoDB),

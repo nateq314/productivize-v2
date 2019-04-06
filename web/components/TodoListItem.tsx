@@ -61,22 +61,24 @@ export default function TodoListItem({
           setCurrEditing(isEditing ? null : todo.id);
         }}
       >
-        {isEditing ? "Cancel" : "Update"}
+        {isEditing ? " Cancel" : " Update"}
       </a>
       <a
         onClick={() => {
           setSelectedTodoId(isSelected ? null : todo.id);
         }}
       >
-        {isSelected ? "Deselect" : "Select"}
+        {isSelected ? " Deselect" : " Select"}
       </a>
       <Toggle selectedList={selectedList} todo={todo} toggleFlag="important">
         {(toggle) => (
           <a onClick={toggle} className="toggleImportant">
+            {" "}
             Important
           </a>
         )}
       </Toggle>
+      <span> {todo.order}</span>
     </StyledTodoListItem>
   );
 }
