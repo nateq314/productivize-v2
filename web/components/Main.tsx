@@ -164,7 +164,10 @@ function updateQuery(
           ...prev.lists[listIndex],
           todos: [
             ...prev.lists[listIndex].todos.slice(0, todoIndex),
-            ...prev.lists[listIndex].todos.slice(todoIndex + 1)
+            ...prev.lists[listIndex].todos.slice(todoIndex + 1).map((t) => ({
+              ...t,
+              order: t.order - 1
+            }))
           ]
         };
         return {

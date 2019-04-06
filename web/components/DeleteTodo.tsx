@@ -13,7 +13,8 @@ const optimisticResponse = {
   __typename: "Mutation",
   deleteTodo: {
     __typename: "Result",
-    success: true
+    success: true,
+    message: "opt"
   }
 };
 
@@ -29,14 +30,20 @@ export default function DeleteTodo({
       update={(cache, { data }) => {
         if (data) {
           const {
-            deleteTodo: { success }
+            deleteTodo: { success, message }
           } = data;
           if (success) {
             cache.writeData({
               data: {
                 list: {
                   ...selectedList,
-                  todos: selectedList.todos.filter((t) => t.id !== todo.id)
+                  todos: selectedList.todos
+                    .filter((t) => t.id !== todo.id)
+                    .map((t) => {
+                      return t.order > todo.order && message !== "opt"
+                        ? { ...t, order: t.order - 1 }
+                        : t;
+                    })
                 }
               }
             });

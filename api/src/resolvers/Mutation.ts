@@ -32,6 +32,8 @@ function convertDateFieldsForPublishing(
   };
 }
 
+const firestore = fbAdmin.firestore();
+
 export default {
   /**********************
    * CREATE A LIST
@@ -144,30 +146,33 @@ export default {
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
-      const todoListDocRef = fbAdmin
-        .firestore()
-        .collection("lists")
-        .doc(args.listId);
-      const todosColRef = todoListDocRef.collection("todos");
-      const todoListDocSnapshot = await todoListDocRef.get();
-      const { uid } = todoListDocSnapshot.data() as ListDB;
-      const currTodosSnapshot = await todosColRef.get();
-      const newTodoDocRef = await todosColRef.add({
-        added_on: new Date(),
-        content: args.content,
-        completed: false,
-        completed_on: null,
-        deadline: args.deadline || null,
-        description: "",
-        important: args.important,
-        order: currTodosSnapshot.size + 1,
-        remind_on: args.remind_on || null
+      let uid = "";
+      const newTodoDocRef = await firestore.runTransaction(async (tx) => {
+        const todoListDocRef = firestore.collection("lists").doc(args.listId);
+        const todosCollRef = todoListDocRef.collection("todos");
+        const todoListDocSnapshot = await tx.get(todoListDocRef);
+        uid = (todoListDocSnapshot.data() as ListDB).uid;
+        const currTodosSnapshot = await tx.get(todosCollRef);
+        // tslint:disable-next-line:no-shadowed-variable
+        const newTodoDocRef = todosCollRef.doc();
+        tx.set(newTodoDocRef, {
+          added_on: new Date(),
+          content: args.content,
+          completed: false,
+          completed_on: null,
+          deadline: args.deadline || null,
+          description: "",
+          important: args.important,
+          order: currTodosSnapshot.size + 1,
+          remind_on: args.remind_on || null
+        });
+        return newTodoDocRef;
       });
       const newTodoDocSnapshot = await newTodoDocRef.get();
       const newTodoData = newTodoDocSnapshot.data() as TodoDB;
       const todoCreated = {
         ...newTodoData,
-        id: newTodoDocRef.id,
+        id: newTodoDocSnapshot.id,
         list_id: args.listId
       };
       pubsub.publish(LIST_EVENTS, {
@@ -208,7 +213,6 @@ export default {
 
       // Delete the document, then decrement the order of every todo that has an
       // order greater than the one deleted.
-      // TODO: ALSO DO THIS FOR UPDATING, IN THE CASE THE ORDER FIELD IS CHANGED
       // TODO: ALSO DO THIS FOR LIST DELETION & UPDATING
       // TODO: REFLECT CHANGES ON FRONT END
       await fbAdmin.firestore().runTransaction(async (tx) => {

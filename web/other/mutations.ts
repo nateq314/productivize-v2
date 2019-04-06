@@ -25,6 +25,7 @@ export const DELETE_LIST = gql`
   mutation DeleteList($id: ID!) {
     deleteList(id: $id) {
       success
+      message
     }
   }
 `;
@@ -84,6 +85,7 @@ export const DELETE_TODO = gql`
   mutation DeleteTodo($listId: String!, $todoId: String!) {
     deleteTodo(listId: $listId, todoId: $todoId) {
       success
+      message
     }
   }
 `;
