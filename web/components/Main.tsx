@@ -160,15 +160,20 @@ function updateQuery(
       );
       if (todoIndex >= 0) {
         // If the todo still exists
+        const deletedTodoOrder = prev.lists[listIndex].todos[todoIndex].order;
         const updatedList = {
           ...prev.lists[listIndex],
           todos: [
             ...prev.lists[listIndex].todos.slice(0, todoIndex),
-            ...prev.lists[listIndex].todos.slice(todoIndex + 1).map((t) => ({
-              ...t,
-              order: t.order - 1
-            }))
-          ]
+            ...prev.lists[listIndex].todos.slice(todoIndex + 1)
+          ].map((t) => {
+            return t.order > deletedTodoOrder
+              ? {
+                  ...t,
+                  order: t.order - 1
+                }
+              : t;
+          })
         };
         return {
           lists: [

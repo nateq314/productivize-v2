@@ -33,6 +33,7 @@ function convertDateFieldsForPublishing(
 }
 
 const firestore = fbAdmin.firestore();
+const listsCollRef = firestore.collection("lists");
 
 export default {
   /**********************
@@ -42,25 +43,23 @@ export default {
     authorize(ctx);
     try {
       const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
-      const currUserLists = await fbAdmin
-        .firestore()
-        .collection("lists")
-        .where("uid", "==", current_uid)
-        .get();
-      const newListDocument = await fbAdmin
-        .firestore()
-        .collection("lists")
-        .add({
+      // ====== BEGIN TRANSACTION =============================================
+      const listCreated = await firestore.runTransaction(async (tx) => {
+        const currUserLists = await tx.get(
+          listsCollRef.where("uid", "==", current_uid)
+        );
+        const newListDocRef = listsCollRef.doc();
+        const newListData = {
           name: args.name,
           order: currUserLists.size + 1,
           uid: current_uid
-        });
-      const newListDocSnapshot = await newListDocument.get();
-      const listCreated: ListGQL = {
-        ...(newListDocSnapshot.data() as ListDB),
-        id: newListDocument.id,
-        todos: []
-      };
+        } as { [key: string]: any };
+        tx.create(newListDocRef, newListData);
+        newListData.id = newListDocRef.id;
+        newListData.todos = [];
+        return newListData as ListGQL;
+      });
+      // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, { listCreated, uid: listCreated.uid });
       return listCreated;
     } catch (error) {
@@ -76,23 +75,31 @@ export default {
     authorize(ctx);
     try {
       const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
-      const todoListDocRef = fbAdmin
-        .firestore()
-        .collection("lists")
-        .doc(args.id);
-      const todoListDocSnapshot = await todoListDocRef.get();
-      if ((todoListDocSnapshot.data() as ListDB).uid !== current_uid) {
-        // TODO: test this
-        throw new ForbiddenError("You are not authorized to touch this list.");
-      }
-      // TODO: Also delete the todos subcollection! Otherwise the below
-      // delete() call will leave phantom documents in the database
-      // (documents with no fields but with a todos subcollection)
-      await todoListDocRef.delete();
-      const listDeleted = {
-        ...(todoListDocSnapshot.data() as ListDB),
-        id: args.id
-      };
+      const todoListDocRef = listsCollRef.doc(args.id);
+      // ====== BEGIN TRANSACTION =============================================
+      const listDeleted = await firestore.runTransaction(async (tx) => {
+        const deletedListData = (await tx.get(todoListDocRef)).data() as ListDB;
+        if (deletedListData.uid !== current_uid) {
+          // TODO: test this
+          throw new ForbiddenError(
+            "You are not authorized to touch this list."
+          );
+        }
+        // TODO: Also delete the todos subcollection! Otherwise the below
+        // delete() call will leave phantom documents in the database
+        // (documents with no fields but with a todos subcollection)
+        tx.delete(todoListDocRef);
+        const higherOrderLists = await tx.get(
+          listsCollRef.where("order", ">", deletedListData.order)
+        );
+        higherOrderLists.forEach((list) => {
+          const order = (list.data() as ListDB).order;
+          tx.update(list.ref, { order: order - 1 });
+        });
+        (deletedListData as ListGQL).id = todoListDocRef.id;
+        return deletedListData as ListGQL;
+      });
+      // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, { listDeleted, uid: listDeleted.uid });
       return { success: true };
     } catch (error) {
@@ -108,10 +115,7 @@ export default {
     authorize(ctx);
     try {
       const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
-      const todoListDocRef = fbAdmin
-        .firestore()
-        .collection("lists")
-        .doc(args.id);
+      const todoListDocRef = listsCollRef.doc(args.id);
       const todoListDocSnapshot = await todoListDocRef.get();
       if ((todoListDocSnapshot.data() as ListDB).uid !== current_uid) {
         // TODO: test this
@@ -147,8 +151,9 @@ export default {
     authorize(ctx);
     try {
       let uid = "";
+      // ====== BEGIN TRANSACTION =============================================
       const newTodoDocRef = await firestore.runTransaction(async (tx) => {
-        const todoListDocRef = firestore.collection("lists").doc(args.listId);
+        const todoListDocRef = listsCollRef.doc(args.listId);
         const todosCollRef = todoListDocRef.collection("todos");
         const todoListDocSnapshot = await tx.get(todoListDocRef);
         uid = (todoListDocSnapshot.data() as ListDB).uid;
@@ -168,6 +173,7 @@ export default {
         });
         return newTodoDocRef;
       });
+      // ====== END TRANSACTION ===============================================
       const newTodoDocSnapshot = await newTodoDocRef.get();
       const newTodoData = newTodoDocSnapshot.data() as TodoDB;
       const todoCreated = {
@@ -192,10 +198,7 @@ export default {
   async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
-      const todoListDocRef = fbAdmin
-        .firestore()
-        .collection("lists")
-        .doc(args.listId);
+      const todoListDocRef = listsCollRef.doc(args.listId);
       const todoListDocSnapshot = await todoListDocRef.get();
       const { uid } = todoListDocSnapshot.data() as ListDB;
       if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
@@ -215,7 +218,8 @@ export default {
       // order greater than the one deleted.
       // TODO: ALSO DO THIS FOR LIST DELETION & UPDATING
       // TODO: REFLECT CHANGES ON FRONT END
-      await fbAdmin.firestore().runTransaction(async (tx) => {
+      // ====== BEGIN TRANSACTION =============================================
+      await firestore.runTransaction(async (tx) => {
         const todosQuerySnapshot = await tx.get(
           todoListDocRef
             .collection("todos")
@@ -228,6 +232,7 @@ export default {
           tx.update(todoDoc.ref, { order: order - 1 });
         });
       });
+      // ====== END TRANSACTION ===============================================
 
       pubsub.publish(LIST_EVENTS, {
         todoDeleted: convertDateFieldsForPublishing(todoDeleted),
@@ -248,10 +253,7 @@ export default {
     // set() method handles both creation and updating.
     authorize(ctx);
     try {
-      const todoListDocRef = fbAdmin
-        .firestore()
-        .collection("lists")
-        .doc(args.listId);
+      const todoListDocRef = listsCollRef.doc(args.listId);
       const todoListDocSnapshot = await todoListDocRef.get();
       const { uid } = todoListDocSnapshot.data() as ListDB;
       if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
@@ -285,7 +287,7 @@ export default {
         // Updating 'order' means we have to increment the order of all other
         // todos with an order greater than the one being updated.
         // TODO: implement this on FE and test it
-        await fbAdmin.firestore().runTransaction(async (tx) => {
+        await firestore.runTransaction(async (tx) => {
           const todosQuerySnapshot = await tx.get(
             todoListDocRef.collection("todos").where("order", ">=", order)
           );
