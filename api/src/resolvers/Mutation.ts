@@ -255,57 +255,55 @@ export default {
     // set() method handles both creation and updating.
     authorize(ctx);
     try {
-      const todoListDocRef = listsCollRef.doc(args.listId);
-      const todoListDocSnapshot = await todoListDocRef.get();
-      const { uid } = todoListDocSnapshot.data() as ListDB;
-      if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
-        // TODO: test this
-        throw new ForbiddenError(
-          "Not authorized to touch anything in this list."
-        );
-      }
-      const { content, deadline, remind_on, order } = args;
-      const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
-      const updates: any = {};
+      let uid = "";
+      const todoUpdated = await firestore.runTransaction(async (tx) => {
+        const todoListDocRef = listsCollRef.doc(args.listId);
+        const todoListDocSnapshot = await tx.get(todoListDocRef);
+        uid = (todoListDocSnapshot.data() as ListDB).uid;
+        if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
+          // TODO: test this
+          throw new ForbiddenError(
+            "Not authorized to touch anything in this list."
+          );
+        }
+        const { content, deadline, remind_on, order } = args;
+        const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
+        const todoData = (await tx.get(todoDocRef)).data() as TodoDB;
+        const updates: any = {};
 
-      // TODO: find a better way to do this
-      if (args.hasOwnProperty("completed")) {
-        updates.completed = args.completed;
-        if (args.completed) updates.completed_on = new Date();
-        else updates.completed_on = null;
-      }
-      if (content) updates.content = content;
-      if (deadline) updates.deadline = deadline;
-      if (args.hasOwnProperty("description"))
-        updates.description = args.description;
-      if (args.hasOwnProperty("important")) updates.important = args.important;
-      if (remind_on) updates.remind_on = remind_on;
+        // TODO: find a better way to do this
+        if (args.hasOwnProperty("completed")) {
+          updates.completed = args.completed;
+          if (args.completed) updates.completed_on = new Date();
+          else updates.completed_on = null;
+        }
+        if (content) updates.content = content;
+        if (deadline) updates.deadline = deadline;
+        if (args.hasOwnProperty("description"))
+          updates.description = args.description;
+        if (args.hasOwnProperty("important"))
+          updates.important = args.important;
+        if (order) updates.order = order;
+        if (remind_on) updates.remind_on = remind_on;
 
-      if (!order) {
-        // Updates to anything besides 'order' don't affect other todos. Just
-        // go ahead and do the update.
-        await todoDocRef.update(updates);
-      } else {
-        // Updating 'order' means we have to increment the order of all other
-        // todos with an order greater than the one being updated.
-        // TODO: implement this on FE and test it
-        await firestore.runTransaction(async (tx) => {
+        await tx.update(todoDocRef, updates);
+        if (order) {
+          // TODO: implement this on FE and test it
           const todosQuerySnapshot = await tx.get(
             todoListDocRef.collection("todos").where("order", ">=", order)
           );
-          tx.update(todoDocRef, updates);
           todosQuerySnapshot.forEach((todo) => {
             const newOrder = (todo.data() as TodoDB).order + 1;
             tx.update(todo.ref, { order: newOrder });
           });
-        });
-      }
-      const updatedTodoDocSnapshot = await todoDocRef.get();
-      const todoUpdated = {
-        ...(updatedTodoDocSnapshot.data() as TodoDB),
-        id: todoDocRef.id,
-        list_id: args.listId
-      };
+        }
+        return {
+          ...todoData,
+          ...updates,
+          id: todoDocRef.id,
+          list_id: args.listId
+        };
+      });
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
         uid
