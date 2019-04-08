@@ -13,15 +13,15 @@ export interface ListGQL extends ListDB {
 }
 
 export interface TodoDB {
-  added_on: firestore.Timestamp;
+  added_on: firestore.Timestamp | Date;
   completed: boolean;
-  completed_on?: firestore.Timestamp;
+  completed_on?: firestore.Timestamp | Date;
   content: string;
-  deadline?: firestore.Timestamp;
+  deadline?: firestore.Timestamp | Date;
   description: string;
   important: boolean;
   order: number;
-  remind_on?: firestore.Timestamp;
+  remind_on?: firestore.Timestamp | Date;
 }
 
 export interface TodoGQL {

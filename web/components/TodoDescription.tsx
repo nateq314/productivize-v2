@@ -74,7 +74,7 @@ export default function TodoDescription({
     return () => {
       subscription.unsubscribe();
     };
-  }, [todo.id]);
+  }, [todo]);
 
   return (
     <Mutation mutation={UPDATE_TODO}>

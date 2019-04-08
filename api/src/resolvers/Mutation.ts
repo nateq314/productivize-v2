@@ -16,20 +16,24 @@ interface ILogin {
   session?: string;
 }
 
+type TodoDateFields = "added_on" | "completed_on" | "deadline" | "remind_on";
+
 function convertDateFieldsForPublishing(
   todo: TodoDB & { id: string; list_id: string }
-): TodoGQL {
-  return {
-    ...todo,
-    added_on: todo.added_on.toDate().toISOString(),
-    completed_on: todo.completed_on
-      ? todo.completed_on.toDate().toISOString()
-      : undefined,
-    deadline: todo.deadline ? todo.deadline.toDate().toISOString() : undefined,
-    remind_on: todo.remind_on
-      ? todo.remind_on.toDate().toISOString()
-      : undefined
-  };
+) {
+  const converted: any = { ...todo };
+  (["added_on", "completed_on", "deadline", "remind_on"] as Array<
+    TodoDateFields
+  >).forEach((field) => {
+    const value = todo[field];
+    if (value) {
+      converted[field] =
+        value instanceof Date
+          ? value.toISOString()
+          : value.toDate().toISOString();
+    }
+  });
+  return converted as TodoGQL;
 }
 
 const firestore = fbAdmin.firestore();
@@ -116,29 +120,41 @@ export default {
    *********************/
   async updateList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
+    let uid = "";
     try {
-      const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
-      const todoListDocRef = listsCollRef.doc(args.id);
-      const todoListDocSnapshot = await todoListDocRef.get();
-      if ((todoListDocSnapshot.data() as ListDB).uid !== current_uid) {
-        // TODO: test this
-        throw new ForbiddenError(
-          "Not authorized to touch anything in this list."
-        );
-      }
-      const { name, order } = args;
-      const updates: any = {};
-      if (name) updates.name = name;
-      if (order) updates.order = order;
-
-      await todoListDocRef.update(updates);
-
-      const updatedTodoListDocSnapshot = await todoListDocRef.get();
-      const newTodoListData = updatedTodoListDocSnapshot.data() as ListDB;
-      const listUpdated = {
-        ...newTodoListData,
-        id: args.id
-      };
+      const listUpdated = await firestore.runTransaction(async (tx) => {
+        const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
+        const todoListDocRef = listsCollRef.doc(args.id);
+        const todoListDocSnapshot = await tx.get(todoListDocRef);
+        uid = (todoListDocSnapshot.data() as ListDB).uid;
+        if (uid !== current_uid) {
+          // TODO: test this
+          throw new ForbiddenError(
+            "Not authorized to touch anything in this list."
+          );
+        }
+        const todoListData = (await tx.get(todoListDocRef)).data() as ListDB;
+        const { name, order } = args;
+        const updates: any = {};
+        if (name) updates.name = name;
+        if (order) {
+          // TODO: implement this on FE and test it
+          updates.order = order;
+          const todoListsQuerySnapshot = await tx.get(
+            listsCollRef.where("order", ">=", order)
+          );
+          todoListsQuerySnapshot.forEach((list) => {
+            const newOrder = (list.data() as ListDB).order + 1;
+            tx.update(list.ref, { order: newOrder });
+          });
+        }
+        await tx.update(todoListDocRef, updates);
+        return {
+          ...todoListData,
+          ...updates,
+          id: args.id
+        };
+      });
       pubsub.publish(LIST_EVENTS, { listUpdated, uid: listUpdated.uid });
       return listUpdated;
     } catch (error) {
@@ -266,7 +282,7 @@ export default {
             "Not authorized to touch anything in this list."
           );
         }
-        const { content, deadline, remind_on, order } = args;
+        const { content, order } = args;
         const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
         const todoData = (await tx.get(todoDocRef)).data() as TodoDB;
         const updates: any = {};
@@ -278,15 +294,15 @@ export default {
           else updates.completed_on = null;
         }
         if (content) updates.content = content;
-        if (deadline) updates.deadline = deadline;
+        if (args.hasOwnProperty("deadline")) updates.deadline = args.deadline;
         if (args.hasOwnProperty("description"))
           updates.description = args.description;
         if (args.hasOwnProperty("important"))
           updates.important = args.important;
         if (order) updates.order = order;
-        if (remind_on) updates.remind_on = remind_on;
+        if (args.hasOwnProperty("remind_on"))
+          updates.remind_on = args.remind_on;
 
-        await tx.update(todoDocRef, updates);
         if (order) {
           // TODO: implement this on FE and test it
           const todosQuerySnapshot = await tx.get(
@@ -297,12 +313,13 @@ export default {
             tx.update(todo.ref, { order: newOrder });
           });
         }
+        await tx.update(todoDocRef, updates);
         return {
           ...todoData,
           ...updates,
           id: todoDocRef.id,
           list_id: args.listId
-        };
+        } as TodoDB & { id: string; list_id: string };
       });
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
