@@ -14,7 +14,8 @@ const optimisticResponse = {
   __typename: "Mutation",
   deleteList: {
     __typename: "Result",
-    success: true
+    success: true,
+    message: null
   }
 };
 

@@ -11,8 +11,8 @@ export default {
   // doesn't recognize.
   DateTime: {
     ...GraphQLDateTime,
-    serialize: (value: firestore.Timestamp) =>
-      GraphQLDateTime.serialize(value.toDate())
+    serialize: (value: Date | firestore.Timestamp) =>
+      value instanceof Date ? value : GraphQLDateTime.serialize(value.toDate())
   },
   List,
   Mutation,

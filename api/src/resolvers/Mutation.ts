@@ -85,13 +85,16 @@ export default {
             "You are not authorized to touch this list."
           );
         }
-        // TODO: Also delete the todos subcollection! Otherwise the below
-        // delete() call will leave phantom documents in the database
-        // (documents with no fields but with a todos subcollection)
-        tx.delete(todoListDocRef);
         const higherOrderLists = await tx.get(
           listsCollRef.where("order", ">", deletedListData.order)
         );
+        // First delete all the todos in the "todos" subcollection, if any.
+        const todos = await todoListDocRef.collection("todos").listDocuments();
+        todos.forEach((todo) => {
+          tx.delete(todo);
+        });
+        // Then delete the list itself.
+        tx.delete(todoListDocRef);
         higherOrderLists.forEach((list) => {
           const order = (list.data() as ListDB).order;
           tx.update(list.ref, { order: order - 1 });
@@ -152,16 +155,16 @@ export default {
     try {
       let uid = "";
       // ====== BEGIN TRANSACTION =============================================
-      const newTodoDocRef = await firestore.runTransaction(async (tx) => {
+      const todoCreated = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
         const todosCollRef = todoListDocRef.collection("todos");
         const todoListDocSnapshot = await tx.get(todoListDocRef);
         uid = (todoListDocSnapshot.data() as ListDB).uid;
         const currTodosSnapshot = await tx.get(todosCollRef);
-        // tslint:disable-next-line:no-shadowed-variable
         const newTodoDocRef = todosCollRef.doc();
-        tx.set(newTodoDocRef, {
-          added_on: new Date(),
+        const added_on = new Date();
+        const newTodoData = {
+          added_on,
           content: args.content,
           completed: false,
           completed_on: null,
@@ -170,19 +173,20 @@ export default {
           important: args.important,
           order: currTodosSnapshot.size + 1,
           remind_on: args.remind_on || null
-        });
-        return newTodoDocRef;
+        };
+        tx.create(newTodoDocRef, newTodoData);
+        return {
+          ...newTodoData,
+          id: newTodoDocRef.id,
+          list_id: args.listId
+        };
       });
       // ====== END TRANSACTION ===============================================
-      const newTodoDocSnapshot = await newTodoDocRef.get();
-      const newTodoData = newTodoDocSnapshot.data() as TodoDB;
-      const todoCreated = {
-        ...newTodoData,
-        id: newTodoDocSnapshot.id,
-        list_id: args.listId
-      };
       pubsub.publish(LIST_EVENTS, {
-        todoCreated: convertDateFieldsForPublishing(todoCreated),
+        todoCreated: {
+          ...todoCreated,
+          added_on: todoCreated.added_on.toISOString()
+        },
         uid
       });
       return todoCreated;
@@ -197,33 +201,26 @@ export default {
    *********************/
   async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
+    let uid = "";
     try {
-      const todoListDocRef = listsCollRef.doc(args.listId);
-      const todoListDocSnapshot = await todoListDocRef.get();
-      const { uid } = todoListDocSnapshot.data() as ListDB;
-      if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
-        // TODO: test this
-        throw new ForbiddenError(
-          "Not authorized to touch anything in this list."
-        );
-      }
-      const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
-      const todoDeleted = {
-        ...((await todoDocRef.get()).data() as TodoDB),
-        id: todoDocRef.id,
-        list_id: args.listId
-      };
-
-      // Delete the document, then decrement the order of every todo that has an
-      // order greater than the one deleted.
-      // TODO: ALSO DO THIS FOR LIST DELETION & UPDATING
-      // TODO: REFLECT CHANGES ON FRONT END
       // ====== BEGIN TRANSACTION =============================================
-      await firestore.runTransaction(async (tx) => {
+      const todoDeleted = await firestore.runTransaction(async (tx) => {
+        const todoListDocRef = listsCollRef.doc(args.listId);
+        const todoListDocSnapshot = await tx.get(todoListDocRef);
+        uid = (todoListDocSnapshot.data() as ListDB).uid;
+        if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
+          // TODO: test this
+          throw new ForbiddenError(
+            "Not authorized to touch anything in this list."
+          );
+        }
+        const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
+        const deletedTodoData = (await tx.get(todoDocRef)).data() as TodoDB;
+
         const todosQuerySnapshot = await tx.get(
           todoListDocRef
             .collection("todos")
-            .where("order", ">", todoDeleted.order)
+            .where("order", ">", deletedTodoData.order)
         );
 
         tx.delete(todoDocRef);
@@ -231,6 +228,11 @@ export default {
           const order = (todoDoc.data() as TodoDB).order;
           tx.update(todoDoc.ref, { order: order - 1 });
         });
+        return {
+          ...deletedTodoData,
+          id: todoDocRef.id,
+          list_id: args.listId
+        };
       });
       // ====== END TRANSACTION ===============================================
 
