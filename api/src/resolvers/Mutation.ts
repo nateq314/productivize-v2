@@ -122,6 +122,7 @@ export default {
     authorize(ctx);
     let uid = "";
     try {
+      // ====== BEGIN TRANSACTION =============================================
       const listUpdated = await firestore.runTransaction(async (tx) => {
         const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
         const todoListDocRef = listsCollRef.doc(args.id);
@@ -155,6 +156,7 @@ export default {
           id: args.id
         };
       });
+      // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, { listUpdated, uid: listUpdated.uid });
       return listUpdated;
     } catch (error) {
@@ -272,6 +274,7 @@ export default {
     authorize(ctx);
     try {
       let uid = "";
+      // ====== BEGIN TRANSACTION =============================================
       const todoUpdated = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
         const todoListDocSnapshot = await tx.get(todoListDocRef);
@@ -299,17 +302,31 @@ export default {
           updates.description = args.description;
         if (args.hasOwnProperty("important"))
           updates.important = args.important;
-        if (order) updates.order = order;
         if (args.hasOwnProperty("remind_on"))
           updates.remind_on = args.remind_on;
-
         if (order) {
-          // TODO: implement this on FE and test it
-          const todosQuerySnapshot = await tx.get(
-            todoListDocRef.collection("todos").where("order", ">=", order)
-          );
+          updates.order = order;
+          let todosQuerySnapshot: FirebaseFirestore.QuerySnapshot;
+          let adjustment: -1 | 1;
+          if (order > todoData.order) {
+            todosQuerySnapshot = await tx.get(
+              todoListDocRef
+                .collection("todos")
+                .where("order", "<=", order)
+                .where("order", ">=", todoData.order)
+            );
+            adjustment = -1;
+          } else {
+            todosQuerySnapshot = await tx.get(
+              todoListDocRef
+                .collection("todos")
+                .where("order", ">=", order)
+                .where("order", "<=", todoData.order)
+            );
+            adjustment = 1;
+          }
           todosQuerySnapshot.forEach((todo) => {
-            const newOrder = (todo.data() as TodoDB).order + 1;
+            const newOrder = (todo.data() as TodoDB).order + adjustment;
             tx.update(todo.ref, { order: newOrder });
           });
         }
@@ -321,6 +338,7 @@ export default {
           list_id: args.listId
         } as TodoDB & { id: string; list_id: string };
       });
+      // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
         uid

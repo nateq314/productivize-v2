@@ -1,10 +1,10 @@
-import * as React from "react";
-import App, { Container, AppProps } from "next/app";
-import { ApolloProvider, Query } from "react-apollo";
-import withApolloClient from "../other/with-apollo-client";
 import { ApolloClient, NormalizedCacheObject } from "apollo-boost";
+import App, { AppProps, Container } from "next/app";
+import * as React from "react";
+import { ApolloProvider, Query } from "react-apollo";
 import GlobalStyles from "../components/GlobalStyles";
 import { FETCH_CURRENT_USER } from "../other/queries";
+import withApolloClient from "../other/with-apollo-client";
 
 export interface StoredUserData {
   email: string;
@@ -25,7 +25,7 @@ interface MyAppProps extends AppProps {
 export const UserContext = React.createContext<StoredUserData | null>(null);
 
 class MyApp extends App<MyAppProps> {
-  render() {
+  public render() {
     const { Component, pageProps, apolloClient } = this.props;
     return (
       <Container>

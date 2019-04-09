@@ -83,6 +83,7 @@ const schema = gql`
       deadline: DateTime
       description: String
       important: Boolean
+      order: Int
       remind_on: DateTime
     ): Todo!
     login(idToken: String, session: String): LoginResult!

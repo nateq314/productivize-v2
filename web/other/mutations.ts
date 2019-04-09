@@ -99,6 +99,7 @@ export const UPDATE_TODO = gql`
     $deadline: DateTime
     $description: String
     $important: Boolean
+    $order: Int
     $remind_on: DateTime
   ) {
     updateTodo(
@@ -109,6 +110,7 @@ export const UPDATE_TODO = gql`
       deadline: $deadline
       description: $description
       important: $important
+      order: $order
       remind_on: $remind_on
     ) {
       id

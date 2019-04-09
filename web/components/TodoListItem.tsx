@@ -1,12 +1,16 @@
 import React from "react";
+import { Draggable } from "react-beautiful-dnd";
 import styled from "styled-components";
-import { Todo, TodoList } from "./Main";
-import Toggle from "./Toggle";
-import TodoContent from "./TodoContent";
 import DeleteTodo from "./DeleteTodo";
+import { Todo, TodoList } from "./Main";
+import TodoContent from "./TodoContent";
+import Toggle from "./Toggle";
 
 const StyledTodoListItem = styled.li`
-  margin-bottom: 20px;
+  padding: 10px 0px;
+  margin-bottom: 10px;
+  background-color: #1d1d34;
+  border-radius: 8px;
 
   &.important {
     .toggleImportant {
@@ -20,6 +24,7 @@ const StyledTodoListItem = styled.li`
 `;
 
 interface TodoListItemProps {
+  index: number;
   isEditing: boolean;
   isSelected: boolean;
   selectedList: TodoList;
@@ -29,6 +34,7 @@ interface TodoListItemProps {
 }
 
 export default function TodoListItem({
+  index,
   isEditing,
   isSelected,
   selectedList,
@@ -37,48 +43,68 @@ export default function TodoListItem({
   todo
 }: TodoListItemProps) {
   return (
-    <StyledTodoListItem
-      className={
-        (isSelected ? `selected ` : "") + (todo.important ? "important " : "")
-      }
-    >
-      <Toggle selectedList={selectedList} todo={todo} toggleFlag="completed">
-        {(toggle) => (
-          <input type="checkbox" checked={todo.completed} onChange={toggle} />
-        )}
-      </Toggle>
-      <TodoContent
-        endEdit={() => setCurrEditing(null)}
-        isEditing={isEditing}
-        selectedList={selectedList}
-        todo={todo}
-      />
-      <DeleteTodo selectedList={selectedList} todo={todo}>
-        {(deleteTodo) => <span onClick={deleteTodo}> Delete</span>}
-      </DeleteTodo>
-      <a
-        onClick={() => {
-          setCurrEditing(isEditing ? null : todo.id);
-        }}
-      >
-        {isEditing ? " Cancel" : " Update"}
-      </a>
-      <a
-        onClick={() => {
-          setSelectedTodoId(isSelected ? null : todo.id);
-        }}
-      >
-        {isSelected ? " Deselect" : " Select"}
-      </a>
-      <Toggle selectedList={selectedList} todo={todo} toggleFlag="important">
-        {(toggle) => (
-          <a onClick={toggle} className="toggleImportant">
-            {" "}
-            Important
+    <Draggable draggableId={todo.id} index={index}>
+      {(provided) => (
+        <StyledTodoListItem
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          ref={provided.innerRef}
+          className={
+            (isSelected ? `selected ` : "") +
+            (todo.important ? "important " : "")
+          }
+        >
+          <Toggle
+            selectedList={selectedList}
+            todo={todo}
+            toggleFlag="completed"
+          >
+            {(toggle) => (
+              <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={toggle}
+              />
+            )}
+          </Toggle>
+          <TodoContent
+            endEdit={() => setCurrEditing(null)}
+            isEditing={isEditing}
+            selectedList={selectedList}
+            todo={todo}
+          />
+          <DeleteTodo selectedList={selectedList} todo={todo}>
+            {(deleteTodo) => <span onClick={deleteTodo}> Delete</span>}
+          </DeleteTodo>
+          <a
+            onClick={() => {
+              setCurrEditing(isEditing ? null : todo.id);
+            }}
+          >
+            {isEditing ? " Cancel" : " Update"}
           </a>
-        )}
-      </Toggle>
-      <span> {todo.order}</span>
-    </StyledTodoListItem>
+          <a
+            onClick={() => {
+              setSelectedTodoId(isSelected ? null : todo.id);
+            }}
+          >
+            {isSelected ? " Deselect" : " Select"}
+          </a>
+          <Toggle
+            selectedList={selectedList}
+            todo={todo}
+            toggleFlag="important"
+          >
+            {(toggle) => (
+              <a onClick={toggle} className="toggleImportant">
+                {" "}
+                Important
+              </a>
+            )}
+          </Toggle>
+          <span> {todo.order}</span>
+        </StyledTodoListItem>
+      )}
+    </Draggable>
   );
 }

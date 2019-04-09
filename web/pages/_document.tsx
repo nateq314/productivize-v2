@@ -1,8 +1,8 @@
 import Document, {
   Head,
   Main,
-  NextScript,
-  NextDocumentContext
+  NextDocumentContext,
+  NextScript
 } from "next/document";
 import { ServerStyleSheet } from "styled-components";
 
@@ -11,7 +11,7 @@ interface DocumentProps {
 }
 
 export default class MyDocument extends Document<DocumentProps> {
-  static async getInitialProps({ renderPage }: NextDocumentContext) {
+  public static async getInitialProps({ renderPage }: NextDocumentContext) {
     const sheet = new ServerStyleSheet();
 
     const page = renderPage((App) => (props) =>
@@ -23,7 +23,7 @@ export default class MyDocument extends Document<DocumentProps> {
     return { ...page, styleTags };
   }
 
-  render() {
+  public render() {
     return (
       <html>
         <Head>

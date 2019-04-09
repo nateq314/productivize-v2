@@ -1,8 +1,8 @@
-import React, { useContext } from "react";
 import Link from "next/link";
+import React, { useContext } from "react";
 import styled from "styled-components";
-import Logout from "./Logout";
 import { UserContext } from "../pages/_app";
+import Logout from "./Logout";
 
 const StyledAppBar = styled.header`
   background-color: rgba(255, 255, 255, 0.1);

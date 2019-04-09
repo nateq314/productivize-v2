@@ -1,8 +1,8 @@
 import React, { useContext } from "react";
 import styled from "styled-components";
 import Login from "../components/Login";
-import { UserContext } from "./_app";
 import Main from "../components/Main";
+import { UserContext } from "./_app";
 
 const StyledHome = styled.div``;
 

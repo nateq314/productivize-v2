@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import TodoLists from "./TodoLists";
-import Todos from "./Todos";
+import TodosListSection from "./TodosListSection";
 import TodoDetails from "./TodoDetails";
 
 const StyledAppContent = styled.div`
@@ -71,7 +71,7 @@ export default function AppContent(props: AppContentProps) {
           setSelectedTodoId(null);
         }}
       />
-      <Todos
+      <TodosListSection
         todos={todos}
         selectedList={selectedList}
         selectedTodoId={selectedTodoId}
