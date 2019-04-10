@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Draggable } from "react-beautiful-dnd";
 import styled from "styled-components";
 import DeleteTodo from "./DeleteTodo";
@@ -11,6 +11,7 @@ const StyledTodoListItem = styled.li`
   margin-bottom: 10px;
   background-color: #1d1d34;
   border-radius: 8px;
+  transition: 0.25s background-color;
 
   &.important {
     .toggleImportant {
@@ -21,38 +22,54 @@ const StyledTodoListItem = styled.li`
   &.selected {
     background-color: #555;
   }
+
+  &.isDragging {
+    background-color: #3d3d54;
+  }
 `;
 
 interface TodoListItemProps {
   index: number;
+  isDragging: boolean;
   isEditing: boolean;
   isSelected: boolean;
   selectedList: TodoList;
   setCurrEditing: React.Dispatch<React.SetStateAction<string | null>>;
+  setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
   todo: Todo;
 }
 
 export default function TodoListItem({
   index,
+  isDragging,
   isEditing,
   isSelected,
   selectedList,
+  setDraggingID,
   setCurrEditing,
   setSelectedTodoId,
   todo
 }: TodoListItemProps) {
   return (
     <Draggable draggableId={todo.id} index={index}>
-      {(provided) => (
+      {(provided, snapshot) => (
         <StyledTodoListItem
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           ref={provided.innerRef}
           className={
             (isSelected ? `selected ` : "") +
-            (todo.important ? "important " : "")
+            (todo.important ? "important " : "") +
+            (isDragging || snapshot.isDragging ? "isDragging " : "")
           }
+          onMouseDown={(e) => {
+            setDraggingID(todo.id);
+            if (provided.dragHandleProps) {
+              provided.dragHandleProps.onMouseDown(e);
+            }
+          }}
+          onMouseUp={() => setDraggingID(null)}
         >
           <Toggle
             selectedList={selectedList}

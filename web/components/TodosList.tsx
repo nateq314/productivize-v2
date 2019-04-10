@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import TodoListItem from "./TodoListItem";
@@ -8,19 +8,23 @@ const StyledTodosList = styled.ul`
 `;
 
 interface TodosProps {
+  draggingID: string | null;
   innerRef: (element: HTMLElement | null) => any;
   placeholder?: React.ReactElement<HTMLElement> | null;
   selectedList: TodoList;
   selectedTodoId: string | null;
+  setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
   todos: Todo[];
 }
 
 export default function Todos({
+  draggingID,
   innerRef,
   placeholder,
   selectedList,
   selectedTodoId,
+  setDraggingID,
   setSelectedTodoId,
   todos
 }: TodosProps) {
@@ -35,10 +39,12 @@ export default function Todos({
           <TodoListItem
             key={todo.id}
             index={idx}
+            isDragging={draggingID === todo.id}
             isEditing={isEditing}
             isSelected={isSelected}
             selectedList={selectedList}
             setCurrEditing={setCurrEditing}
+            setDraggingID={setDraggingID}
             setSelectedTodoId={setSelectedTodoId}
             todo={todo}
           />

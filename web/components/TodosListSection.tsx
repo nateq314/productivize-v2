@@ -19,28 +19,13 @@ interface TodosProps {
   todos: Todo[];
 }
 
-interface TodoDragState {
-  todo: Todo;
-  newOrder: number;
-}
-
 export default function Todos({
   selectedList,
   selectedTodoId,
   setSelectedTodoId,
   todos
 }: TodosProps) {
-  const [dragState, setDragState] = useState<TodoDragState | null>(null);
-  const optimisticResponse = dragState
-    ? {
-        __typename: "Mutation",
-        updateTodo: {
-          ...dragState.todo,
-          order: dragState.newOrder
-        }
-      }
-    : undefined;
-
+  const [draggingID, setDraggingID] = useState<string | null>(null);
   const sortedTodos = useMemo(() => {
     return [...todos].sort((todoA, todoB) =>
       todoB.order > todoA.order ? -1 : 1
@@ -50,78 +35,74 @@ export default function Todos({
   return (
     <Mutation
       mutation={UPDATE_TODO}
-      optimisticResponse={optimisticResponse}
       update={(cache, { data }) => {
-        const { lists } = cache.readQuery({
-          query: FETCH_LISTS
-        }) as { lists: TodoList[] };
-        cache.writeQuery({
-          query: FETCH_LISTS,
-          data: {
-            lists: lists.map((list) => {
-              if (list.id !== selectedList.id) return list;
-              const { newOrder, todo } = dragState as TodoDragState;
-              if (newOrder > (dragState as TodoDragState).todo.order) {
-                return {
-                  ...list,
-                  todos: list.todos.map((t) => {
-                    if (t.id === todo.id) {
-                      return {
-                        ...todo,
-                        order: newOrder
-                      };
-                    } else if (t.order <= newOrder && t.order >= todo.order) {
-                      return {
-                        ...t,
-                        order: t.order - 1
-                      };
-                    } else return t;
-                  })
-                };
-              } else {
-                return {
-                  ...list,
-                  todos: list.todos.map((t) => {
-                    if (t.id === todo.id) {
-                      return {
-                        ...todo,
-                        order: newOrder
-                      };
-                    } else if (t.order >= newOrder && t.order <= todo.order) {
-                      return {
-                        ...t,
-                        order: t.order + 1
-                      };
-                    } else return t;
-                  })
-                };
-              }
-            })
-          }
-        });
+        if (data) {
+          const { updateTodo } = data;
+          const { lists } = cache.readQuery({
+            query: FETCH_LISTS
+          }) as { lists: TodoList[] };
+          cache.writeQuery({
+            query: FETCH_LISTS,
+            data: {
+              lists: lists.map((list) => {
+                if (list.id !== selectedList.id) return list;
+                const prevOrder = (todos.find(
+                  (todo) => todo.id === updateTodo.id
+                ) as Todo).order;
+                const newOrder = updateTodo.order;
+                if (newOrder > prevOrder) {
+                  // If the order INCREASED
+                  return {
+                    ...list,
+                    todos: list.todos.map((t) => {
+                      if (t.id === updateTodo.id) {
+                        return updateTodo;
+                      } else if (t.order <= newOrder && t.order > prevOrder) {
+                        // decrement all todos with order such that
+                        // prevOrder < order <= newOrder
+                        return {
+                          ...t,
+                          order: t.order - 1
+                        };
+                      } else return t;
+                    })
+                  };
+                } else {
+                  // If the order DECREASED
+                  return {
+                    ...list,
+                    todos: list.todos.map((t) => {
+                      if (t.id === updateTodo.id) {
+                        return updateTodo;
+                      } else if (t.order >= newOrder && t.order < prevOrder) {
+                        // increment all todos with order such that
+                        // newOrder <= order < prevOrder
+                        return {
+                          ...t,
+                          order: t.order + 1
+                        };
+                      } else return t;
+                    })
+                  };
+                }
+              })
+            }
+          });
+        }
       }}
     >
       {(updateTodo) => (
         <StyledTodosListSection>
           <CreateNewTodo selectedList={selectedList} />
           <DragDropContext
-            onDragStart={(start, provided) => {
-              const todo = sortedTodos[start.source.index];
-              setDragState({
-                todo,
-                newOrder: todo.order
-              });
-            }}
-            onDragUpdate={(update, provided) => {
-              if (update.destination) {
-                setDragState({
-                  todo: (dragState as TodoDragState).todo,
-                  newOrder: update.destination.index + 1
-                });
-              }
-            }}
+            // onDragStart={(start, provided) => {
+            // }}
+            // onDragUpdate={(update, provided) => {
+            // }}
             onDragEnd={(result) => {
               const { destination, source, draggableId } = result;
+              const todo = sortedTodos[source.index];
+              setDraggingID(null);
               if (!destination) return;
 
               if (
@@ -133,26 +114,32 @@ export default function Todos({
                 return;
               }
 
-              if (dragState) {
-                updateTodo({
-                  variables: {
-                    listId: selectedList.id,
-                    todoId: draggableId,
-                    order: dragState.newOrder
+              updateTodo({
+                variables: {
+                  listId: selectedList.id,
+                  todoId: draggableId,
+                  order: destination.index + 1
+                },
+                optimisticResponse: {
+                  __typename: "Mutation",
+                  updateTodo: {
+                    ...todo,
+                    order: destination.index + 1
                   }
-                });
-              }
-              setDragState(null);
+                }
+              });
             }}
           >
             <Droppable droppableId={selectedList.id}>
               {(provided) => (
                 <TodosList
+                  draggingID={draggingID}
                   innerRef={provided.innerRef}
                   {...provided.droppableProps}
                   placeholder={provided.placeholder}
                   selectedList={selectedList}
                   selectedTodoId={selectedTodoId}
+                  setDraggingID={setDraggingID}
                   setSelectedTodoId={setSelectedTodoId}
                   todos={sortedTodos}
                 />
