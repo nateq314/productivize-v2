@@ -40,6 +40,7 @@ export interface TodoGQL {
 
 const schema = gql`
   scalar DateTime
+  scalar JSON
 
   type List {
     id: ID!
@@ -55,6 +56,7 @@ const schema = gql`
     todoCreated: Todo
     todoDeleted: Todo
     todoUpdated: Todo
+    metadata: JSON
   }
 
   type LoginResult {

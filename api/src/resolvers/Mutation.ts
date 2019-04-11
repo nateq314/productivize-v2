@@ -274,6 +274,7 @@ export default {
     authorize(ctx);
     try {
       let uid = "";
+      let metadata = null;
       // ====== BEGIN TRANSACTION =============================================
       const todoUpdated = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
@@ -308,6 +309,7 @@ export default {
           updates.order = order;
           let todosQuerySnapshot: FirebaseFirestore.QuerySnapshot;
           let adjustment: -1 | 1;
+          metadata = { prevOrder: todoData.order };
           if (order > todoData.order) {
             todosQuerySnapshot = await tx.get(
               todoListDocRef
@@ -341,6 +343,7 @@ export default {
       // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
+        metadata,
         uid
       });
       return todoUpdated;

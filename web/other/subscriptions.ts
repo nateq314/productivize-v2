@@ -11,6 +11,7 @@ export interface ListEventsSubscriptionData {
         todoCreated?: Todo;
         todoDeleted?: { id: string; list_id: string };
         todoUpdated?: Todo;
+        metadata?: any;
       };
     };
   };
@@ -19,6 +20,7 @@ export interface ListEventsSubscriptionData {
 export const LIST_EVENTS_SUBSCRIPTION = gql`
   subscription listEvents {
     listEvents {
+      metadata
       listCreated {
         id
         name

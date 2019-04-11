@@ -2,6 +2,7 @@ import List from "./List";
 import Mutation from "./Mutation";
 import Query from "./Query";
 import { firestore } from "firebase-admin";
+const GraphQLJSON = require("graphql-type-json");
 const { GraphQLDateTime } = require("graphql-iso-date");
 
 // subscriptions go on separate subscription-only api server
@@ -14,6 +15,7 @@ export default {
     serialize: (value: Date | firestore.Timestamp) =>
       value instanceof Date ? value : GraphQLDateTime.serialize(value.toDate())
   },
+  JSON: GraphQLJSON,
   List,
   Mutation,
   Query

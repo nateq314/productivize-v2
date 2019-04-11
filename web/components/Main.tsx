@@ -122,7 +122,9 @@ function updateQuery(
     listCreated,
     listDeleted,
     todoCreated,
-    todoDeleted
+    todoDeleted,
+    todoUpdated,
+    metadata
   } = subscriptionData.data.listEvents;
   if (todoCreated) {
     const listIndex = prev.lists.findIndex(
@@ -185,6 +187,62 @@ function updateQuery(
       }
     }
     return { lists: prev.lists };
+  } else if (todoUpdated) {
+    // Whatever the update is, it's already been updated in the cache by the
+    // time we get here. So here we only care about updates that have side
+    // effects. E.g. order.
+    if (todoUpdated.hasOwnProperty("order")) {
+      const listIndex = prev.lists.findIndex(
+        (list) => list.id === todoUpdated.list_id
+      );
+      const { prevOrder } = metadata;
+      const newOrder = todoUpdated.order;
+      // We only want to return anything if we know that all other todo orders
+      // (besides the one updated) have not yet been updated. If such is the case,
+      // then there will be exactly two todo items with order === newOrder.
+      if (
+        prev.lists[listIndex].todos.filter((t) => t.order === newOrder)
+          .length === 2
+      ) {
+        return {
+          lists: [
+            ...prev.lists.slice(0, listIndex),
+            {
+              ...prev.lists[listIndex],
+              todos:
+                newOrder > prevOrder
+                  ? // If the order INCREASED
+                    prev.lists[listIndex].todos.map((t) => {
+                      if (t.id === todoUpdated.id) {
+                        return todoUpdated;
+                      } else if (t.order <= newOrder && t.order > prevOrder) {
+                        // decrement all todos with order such that
+                        // prevOrder < order <= newOrder
+                        return {
+                          ...t,
+                          order: t.order - 1
+                        };
+                      } else return t;
+                    })
+                  : // If the order DECREASED
+                    prev.lists[listIndex].todos.map((t) => {
+                      if (t.id === todoUpdated.id) {
+                        return todoUpdated;
+                      } else if (t.order >= newOrder && t.order < prevOrder) {
+                        // increment all todos with order such that
+                        // newOrder <= order < prevOrder
+                        return {
+                          ...t,
+                          order: t.order + 1
+                        };
+                      } else return t;
+                    })
+            },
+            ...prev.lists.slice(listIndex + 1)
+          ]
+        };
+      }
+    }
   } else if (listCreated) {
     const index = prev.lists.findIndex(
       (list) => list.id === listCreated.id || list.id === "temp"

@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { Draggable } from "react-beautiful-dnd";
+import {
+  Draggable,
+  DraggableStateSnapshot,
+  DraggingStyle,
+  NotDraggingStyle
+} from "react-beautiful-dnd";
 import styled from "styled-components";
 import DeleteTodo from "./DeleteTodo";
 import { Todo, TodoList } from "./Main";
@@ -70,6 +75,16 @@ export default function TodoListItem({
             }
           }}
           onMouseUp={() => setDraggingID(null)}
+          style={
+            snapshot.isDropAnimating
+              ? {
+                  ...provided.draggableProps.style,
+                  // TODO: see if we can make this apply to everything except
+                  // background-color
+                  transitionDuration: `0.01s`
+                }
+              : provided.draggableProps.style
+          }
         >
           <Toggle
             selectedList={selectedList}
