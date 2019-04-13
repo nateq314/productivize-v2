@@ -4,27 +4,27 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
 import CreateNewTodo from "./CreateNewTodo";
-import TodosList from "./TodosList";
+import TodosList from "./Todos";
 import { UPDATE_TODO } from "../other/mutations";
 import { FETCH_LISTS } from "../other/queries";
 
-const StyledTodosListSection = styled.section`
+const StyledTodosPane = styled.section`
   grid-area: todos;
 `;
 
-interface TodosProps {
+interface TodosPaneProps {
   selectedList: TodoList;
   selectedTodoId: string | null;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
   todos: Todo[];
 }
 
-export default function Todos({
+export default function TodosPane({
   selectedList,
   selectedTodoId,
   setSelectedTodoId,
   todos
-}: TodosProps) {
+}: TodosPaneProps) {
   const [draggingID, setDraggingID] = useState<string | null>(null);
   const sortedTodos = useMemo(() => {
     return [...todos].sort((todoA, todoB) =>
@@ -92,7 +92,7 @@ export default function Todos({
       }}
     >
       {(updateTodo) => (
-        <StyledTodosListSection>
+        <StyledTodosPane>
           <CreateNewTodo selectedList={selectedList} />
           <DragDropContext
             // onDragStart={(start, provided) => {
@@ -104,7 +104,6 @@ export default function Todos({
               const todo = sortedTodos[source.index];
               setDraggingID(null);
               if (!destination) return;
-
               if (
                 destination.droppableId === source.droppableId &&
                 destination.index === source.index
@@ -146,7 +145,7 @@ export default function Todos({
               )}
             </Droppable>
           </DragDropContext>
-        </StyledTodosListSection>
+        </StyledTodosPane>
       )}
     </Mutation>
   );

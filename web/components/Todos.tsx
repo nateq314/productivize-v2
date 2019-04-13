@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
-import TodoListItem from "./TodoListItem";
+import TodoListItem from "./TodoItem";
 
-const StyledTodosList = styled.ul`
+const StyledTodos = styled.ul`
   list-style-type: none;
 `;
 
@@ -31,7 +31,7 @@ export default function Todos({
   const [currEditing, setCurrEditing] = useState<string | null>(null);
 
   return (
-    <StyledTodosList ref={innerRef}>
+    <StyledTodos ref={innerRef}>
       {todos.map((todo, idx) => {
         const isEditing = currEditing === todo.id;
         const isSelected = selectedTodoId === todo.id;
@@ -51,6 +51,6 @@ export default function Todos({
         );
       })}
       {placeholder}
-    </StyledTodosList>
+    </StyledTodos>
   );
 }

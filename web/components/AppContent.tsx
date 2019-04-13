@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
-import TodoLists from "./TodoLists";
-import TodosListSection from "./TodosListSection";
+import ListsPane from "./ListsPane";
+import TodosPane from "./TodosPane";
 import TodoDetails from "./TodoDetails";
 
 const StyledAppContent = styled.div`
@@ -61,7 +61,7 @@ export default function AppContent(props: AppContentProps) {
 
   return (
     <StyledAppContent>
-      <TodoLists
+      <ListsPane
         lists={lists}
         openNewListModal={openNewListModal}
         openUpdateListModal={openUpdateListModal}
@@ -71,7 +71,7 @@ export default function AppContent(props: AppContentProps) {
           setSelectedTodoId(null);
         }}
       />
-      <TodosListSection
+      <TodosPane
         todos={todos}
         selectedList={selectedList}
         selectedTodoId={selectedTodoId}

@@ -1,17 +1,12 @@
-import React, { useState } from "react";
-import {
-  Draggable,
-  DraggableStateSnapshot,
-  DraggingStyle,
-  NotDraggingStyle
-} from "react-beautiful-dnd";
+import React from "react";
+import { Draggable } from "react-beautiful-dnd";
 import styled from "styled-components";
 import DeleteTodo from "./DeleteTodo";
 import { Todo, TodoList } from "./Main";
 import TodoContent from "./TodoContent";
 import Toggle from "./Toggle";
 
-const StyledTodoListItem = styled.li`
+const StyledTodoItem = styled.li`
   padding: 10px 0px;
   margin-bottom: 10px;
   background-color: #1d1d34;
@@ -33,7 +28,7 @@ const StyledTodoListItem = styled.li`
   }
 `;
 
-interface TodoListItemProps {
+interface TodoItemProps {
   index: number;
   isDragging: boolean;
   isEditing: boolean;
@@ -45,7 +40,7 @@ interface TodoListItemProps {
   todo: Todo;
 }
 
-export default function TodoListItem({
+export default function TodoItem({
   index,
   isDragging,
   isEditing,
@@ -55,11 +50,11 @@ export default function TodoListItem({
   setCurrEditing,
   setSelectedTodoId,
   todo
-}: TodoListItemProps) {
+}: TodoItemProps) {
   return (
     <Draggable draggableId={todo.id} index={index}>
       {(provided, snapshot) => (
-        <StyledTodoListItem
+        <StyledTodoItem
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           ref={provided.innerRef}
@@ -135,7 +130,7 @@ export default function TodoListItem({
             )}
           </Toggle>
           <span> {todo.order}</span>
-        </StyledTodoListItem>
+        </StyledTodoItem>
       )}
     </Draggable>
   );
