@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import styled from "styled-components";
-import { TodoList } from "./Main";
+import { TodoList } from "../Main";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import Lists from "./Lists";
 

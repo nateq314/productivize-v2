@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "./Main";
-import ListsPane from "./ListsPane";
-import TodosPane from "./TodosPane";
+import ListsPane from "./ListsPane/ListsPane";
+import TodosPane from "./TodosPane/TodosPane";
 import TodoDetails from "./TodoDetails";
 
 const StyledAppContent = styled.div`

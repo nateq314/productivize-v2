@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { Todo, TodoList } from "./Main";
+import { Todo, TodoList } from "../Main";
 import TodoListItem from "./TodoItem";
 
 const StyledTodos = styled.ul`

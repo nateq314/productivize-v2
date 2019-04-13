@@ -2,11 +2,11 @@ import React, { useMemo, useState } from "react";
 import { Mutation } from "react-apollo";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import styled from "styled-components";
-import { Todo, TodoList } from "./Main";
-import CreateNewTodo from "./CreateNewTodo";
+import { Todo, TodoList } from "../Main";
+import CreateNewTodo from "../CreateNewTodo";
 import TodosList from "./Todos";
-import { UPDATE_TODO } from "../other/mutations";
-import { FETCH_LISTS } from "../other/queries";
+import { UPDATE_TODO } from "../../other/mutations";
+import { FETCH_LISTS } from "../../other/queries";
 
 const StyledTodosPane = styled.section`
   grid-area: todos;

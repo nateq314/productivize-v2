@@ -1,10 +1,10 @@
 import React from "react";
 import { Draggable } from "react-beautiful-dnd";
 import styled from "styled-components";
-import DeleteTodo from "./DeleteTodo";
-import { Todo, TodoList } from "./Main";
-import TodoContent from "./TodoContent";
-import Toggle from "./Toggle";
+import DeleteTodo from "../DeleteTodo";
+import { Todo, TodoList } from "../Main";
+import TodoContent from "../TodoContent";
+import Toggle from "../Toggle";
 
 const StyledTodoItem = styled.li`
   padding: 10px 0px;

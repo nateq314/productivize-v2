@@ -1,10 +1,10 @@
 import React from "react";
 import { Draggable } from "react-beautiful-dnd";
 import styled from "styled-components";
-import { TodoList } from "./Main";
-import DeleteList from "./DeleteList";
+import { TodoList } from "../Main";
+import DeleteList from "../DeleteList";
 
-const StyledListItem = styled.ul`
+const StyledListItem = styled.li`
   padding: 20px 0px;
   background-color: #202020;
   margin: 10px 0px;
