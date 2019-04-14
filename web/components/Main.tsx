@@ -121,6 +121,7 @@ function updateQuery(
   const {
     listCreated,
     listDeleted,
+    listUpdated,
     todoCreated,
     todoDeleted,
     todoUpdated,
@@ -264,6 +265,53 @@ function updateQuery(
     return {
       lists: prev.lists.filter((list) => list.id !== listDeleted.id)
     };
+  } else if (listUpdated) {
+    if (metadata) {
+      console.log("listUpdated:", listUpdated, "metadata:", metadata);
+      const { prevOrder } = metadata;
+      const newOrder = listUpdated.order;
+      if (prev.lists.filter((l) => l.order === newOrder).length === 2) {
+        console.log(
+          "subscription received, and lists order still needs to be updated"
+        );
+        return {
+          lists:
+            newOrder > prevOrder
+              ? // If the order INCREASED
+                prev.lists.map((l) => {
+                  if (l.id === listUpdated.id)
+                    return {
+                      ...listUpdated,
+                      todos: l.todos
+                    };
+                  else if (l.order <= newOrder && l.order > prevOrder) {
+                    // decrement all todos with order such that
+                    // prevOrder < order <= newOrder
+                    return {
+                      ...l,
+                      order: l.order - 1
+                    };
+                  } else return l;
+                })
+              : // If the order DECREASED
+                prev.lists.map((l) => {
+                  if (l.id === listUpdated.id)
+                    return {
+                      ...listUpdated,
+                      todos: l.todos
+                    };
+                  else if (l.order >= newOrder && l.order < prevOrder) {
+                    // increment all todos with order such that
+                    // newOrder <= order < prevOrder
+                    return {
+                      ...l,
+                      order: l.order + 1
+                    };
+                  } else return l;
+                })
+        };
+      }
+    }
   }
   // No need to explicitly handle 'listUpdated' or 'todoUpdated'.
   // Already works like magic. TODO: Why???????

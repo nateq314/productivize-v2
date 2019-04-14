@@ -136,6 +136,14 @@ export default {
           );
         }
         const todoListData = (await tx.get(todoListDocRef)).data() as ListDB;
+        const todosQuerySnapshot = await tx.get(
+          todoListDocRef.collection("todos")
+        );
+        const todos = todosQuerySnapshot.docs.map((d) => ({
+          ...(d.data() as TodoDB),
+          id: d.id,
+          list_id: args.id
+        }));
         const { name, order } = args;
         const updates: any = {};
         if (name) updates.name = name;
@@ -169,10 +177,12 @@ export default {
         return {
           ...todoListData,
           ...updates,
+          todos,
           id: args.id
         };
       });
       // ====== END TRANSACTION ===============================================
+      console.log("listUpdated:", listUpdated);
       pubsub.publish(LIST_EVENTS, {
         listUpdated,
         metadata,
