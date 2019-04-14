@@ -191,7 +191,7 @@ function updateQuery(
     // Whatever the update is, it's already been updated in the cache by the
     // time we get here. So here we only care about updates that have side
     // effects. E.g. order.
-    if (todoUpdated.hasOwnProperty("order")) {
+    if (metadata) {
       const listIndex = prev.lists.findIndex(
         (list) => list.id === todoUpdated.list_id
       );
