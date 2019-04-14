@@ -52,6 +52,7 @@ export default function ListItem({
   setSelectedList,
   openUpdateListModal
 }: ListItemProps) {
+  let mouseXY = { x: 0, y: 0 };
   return (
     <Draggable draggableId={list.id} index={index}>
       {(provided, snapshot) => (
@@ -62,7 +63,17 @@ export default function ListItem({
             (active ? "active " : "") +
             (isDragging || snapshot.isDragging ? "isDragging " : "")
           }
-          onClick={() => setSelectedList(list.id)}
+          onClick={(e: React.MouseEvent<HTMLLIElement>) => {
+            const dx = e.screenX - mouseXY.x;
+            const dy = e.screenY - mouseXY.y;
+            if (dx <= 2 && dy <= 2) {
+              setSelectedList(list.id);
+            }
+            mouseXY = { x: 0, y: 0 };
+          }}
+          onMouseDown={(e: React.MouseEvent<HTMLLIElement>) => {
+            mouseXY = { x: e.screenX, y: e.screenY };
+          }}
           style={
             snapshot.isDropAnimating
               ? {

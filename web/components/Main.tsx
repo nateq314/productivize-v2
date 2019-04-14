@@ -267,13 +267,9 @@ function updateQuery(
     };
   } else if (listUpdated) {
     if (metadata) {
-      console.log("listUpdated:", listUpdated, "metadata:", metadata);
       const { prevOrder } = metadata;
       const newOrder = listUpdated.order;
       if (prev.lists.filter((l) => l.order === newOrder).length === 2) {
-        console.log(
-          "subscription received, and lists order still needs to be updated"
-        );
         return {
           lists:
             newOrder > prevOrder
