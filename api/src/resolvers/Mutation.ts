@@ -121,6 +121,7 @@ export default {
   async updateList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     let uid = "";
+    let metadata = null;
     try {
       // ====== BEGIN TRANSACTION =============================================
       const listUpdated = await firestore.runTransaction(async (tx) => {
@@ -141,11 +142,26 @@ export default {
         if (order) {
           // TODO: implement this on FE and test it
           updates.order = order;
-          const todoListsQuerySnapshot = await tx.get(
-            listsCollRef.where("order", ">=", order)
-          );
-          todoListsQuerySnapshot.forEach((list) => {
-            const newOrder = (list.data() as ListDB).order + 1;
+          let listsQuerySnapshot: FirebaseFirestore.QuerySnapshot;
+          let adjustment: -1 | 1;
+          metadata = { prevOrder: todoListData.order };
+          if (order > todoListData.order) {
+            listsQuerySnapshot = await tx.get(
+              listsCollRef
+                .where("order", "<=", order)
+                .where("order", ">", todoListData.order)
+            );
+            adjustment = -1;
+          } else {
+            listsQuerySnapshot = await tx.get(
+              listsCollRef
+                .where("order", ">=", order)
+                .where("order", "<", todoListData.order)
+            );
+            adjustment = 1;
+          }
+          listsQuerySnapshot.forEach((list) => {
+            const newOrder = (list.data() as ListDB).order + adjustment;
             tx.update(list.ref, { order: newOrder });
           });
         }
@@ -157,7 +173,11 @@ export default {
         };
       });
       // ====== END TRANSACTION ===============================================
-      pubsub.publish(LIST_EVENTS, { listUpdated, uid: listUpdated.uid });
+      pubsub.publish(LIST_EVENTS, {
+        listUpdated,
+        metadata,
+        uid
+      });
       return listUpdated;
     } catch (error) {
       console.error(error);

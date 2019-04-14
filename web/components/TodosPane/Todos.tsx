@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "../Main";
-import TodoListItem from "./TodoItem";
+import TodoItem from "./TodoItem";
 
 const StyledTodos = styled.ul`
   list-style-type: none;
@@ -36,7 +36,7 @@ export default function Todos({
         const isEditing = currEditing === todo.id;
         const isSelected = selectedTodoId === todo.id;
         return (
-          <TodoListItem
+          <TodoItem
             key={todo.id}
             index={idx}
             isDragging={draggingID === todo.id}

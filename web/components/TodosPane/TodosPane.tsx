@@ -4,7 +4,7 @@ import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import styled from "styled-components";
 import { Todo, TodoList } from "../Main";
 import CreateNewTodo from "../CreateNewTodo";
-import TodosList from "./Todos";
+import Todos from "./Todos";
 import { UPDATE_TODO } from "../../other/mutations";
 import { FETCH_LISTS } from "../../other/queries";
 
@@ -131,7 +131,7 @@ export default function TodosPane({
           >
             <Droppable droppableId={selectedList.id}>
               {(provided) => (
-                <TodosList
+                <Todos
                   draggingID={draggingID}
                   innerRef={provided.innerRef}
                   {...provided.droppableProps}
