@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { TodoList } from "../Main";
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
+import { DragDropContext } from "react-beautiful-dnd";
 import Lists from "./Lists";
 import { Mutation } from "react-apollo";
 import { UPDATE_LIST } from "../../other/mutations";

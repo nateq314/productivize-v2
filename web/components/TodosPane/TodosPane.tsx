@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Mutation } from "react-apollo";
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
+import { DragDropContext } from "react-beautiful-dnd";
 import styled from "styled-components";
 import { Todo, TodoList } from "../Main";
 import CreateNewTodo from "../CreateNewTodo";
@@ -129,21 +129,14 @@ export default function TodosPane({
               });
             }}
           >
-            <Droppable droppableId={selectedList.id}>
-              {(provided) => (
-                <Todos
-                  draggingID={draggingID}
-                  innerRef={provided.innerRef}
-                  {...provided.droppableProps}
-                  placeholder={provided.placeholder}
-                  selectedList={selectedList}
-                  selectedTodoId={selectedTodoId}
-                  setDraggingID={setDraggingID}
-                  setSelectedTodoId={setSelectedTodoId}
-                  todos={sortedTodos}
-                />
-              )}
-            </Droppable>
+            <Todos
+              draggingID={draggingID}
+              selectedList={selectedList}
+              selectedTodoId={selectedTodoId}
+              setDraggingID={setDraggingID}
+              setSelectedTodoId={setSelectedTodoId}
+              todos={sortedTodos}
+            />
           </DragDropContext>
         </StyledTodosPane>
       )}

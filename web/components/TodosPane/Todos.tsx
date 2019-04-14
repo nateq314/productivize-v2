@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Todo, TodoList } from "../Main";
 import TodoItem from "./TodoItem";
+import { Droppable } from "react-beautiful-dnd";
 
 const StyledTodos = styled.ul`
   list-style-type: none;
@@ -9,8 +10,6 @@ const StyledTodos = styled.ul`
 
 interface TodosProps {
   draggingID: string | null;
-  innerRef: (element: HTMLElement | null) => any;
-  placeholder?: React.ReactElement<HTMLElement> | null;
   selectedList: TodoList;
   selectedTodoId: string | null;
   setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
@@ -20,8 +19,6 @@ interface TodosProps {
 
 export default function Todos({
   draggingID,
-  innerRef,
-  placeholder,
   selectedList,
   selectedTodoId,
   setDraggingID,
@@ -31,26 +28,30 @@ export default function Todos({
   const [currEditing, setCurrEditing] = useState<string | null>(null);
 
   return (
-    <StyledTodos ref={innerRef}>
-      {todos.map((todo, idx) => {
-        const isEditing = currEditing === todo.id;
-        const isSelected = selectedTodoId === todo.id;
-        return (
-          <TodoItem
-            key={todo.id}
-            index={idx}
-            isDragging={draggingID === todo.id}
-            isEditing={isEditing}
-            isSelected={isSelected}
-            selectedList={selectedList}
-            setCurrEditing={setCurrEditing}
-            setDraggingID={setDraggingID}
-            setSelectedTodoId={setSelectedTodoId}
-            todo={todo}
-          />
-        );
-      })}
-      {placeholder}
-    </StyledTodos>
+    <Droppable droppableId={selectedList.id}>
+      {(provided) => (
+        <StyledTodos {...provided.droppableProps} ref={provided.innerRef}>
+          {todos.map((todo, idx) => {
+            const isEditing = currEditing === todo.id;
+            const isSelected = selectedTodoId === todo.id;
+            return (
+              <TodoItem
+                key={todo.id}
+                index={idx}
+                isDragging={draggingID === todo.id}
+                isEditing={isEditing}
+                isSelected={isSelected}
+                selectedList={selectedList}
+                setCurrEditing={setCurrEditing}
+                setDraggingID={setDraggingID}
+                setSelectedTodoId={setSelectedTodoId}
+                todo={todo}
+              />
+            );
+          })}
+          {provided.placeholder}
+        </StyledTodos>
+      )}
+    </Droppable>
   );
 }

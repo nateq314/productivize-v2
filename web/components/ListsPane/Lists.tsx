@@ -32,7 +32,7 @@ export default function Lists({
   return (
     <Droppable droppableId="lists">
       {(provided) => (
-        <StyledLists ref={provided.innerRef}>
+        <StyledLists {...provided.droppableProps} ref={provided.innerRef}>
           {lists.map((list, index) => {
             const active = selectedList === list.id;
             return (

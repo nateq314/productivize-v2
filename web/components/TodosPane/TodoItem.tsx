@@ -12,6 +12,7 @@ const StyledTodoItem = styled.li`
   background-color: #1d1d34;
   border-radius: 8px;
   transition: 0.25s background-color;
+  position: relative;
 
   &.important {
     .toggleImportant {
@@ -25,6 +26,15 @@ const StyledTodoItem = styled.li`
 
   &.isDragging {
     background-color: #3d3d54;
+  }
+
+  .dragHandle {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.2);
   }
 `;
 
@@ -56,20 +66,12 @@ export default function TodoItem({
       {(provided, snapshot) => (
         <StyledTodoItem
           {...provided.draggableProps}
-          {...provided.dragHandleProps}
           ref={provided.innerRef}
           className={
             (isSelected ? `selected ` : "") +
             (todo.important ? "important " : "") +
             (isDragging || snapshot.isDragging ? "isDragging " : "")
           }
-          onMouseDown={(e) => {
-            setDraggingID(todo.id);
-            if (provided.dragHandleProps) {
-              provided.dragHandleProps.onMouseDown(e);
-            }
-          }}
-          onMouseUp={() => setDraggingID(null)}
           style={
             snapshot.isDropAnimating
               ? {
@@ -130,6 +132,17 @@ export default function TodoItem({
             )}
           </Toggle>
           <span> {todo.order}</span>
+          <span
+            {...provided.dragHandleProps}
+            className="dragHandle"
+            onMouseDown={(e) => {
+              setDraggingID(todo.id);
+              if (provided.dragHandleProps) {
+                provided.dragHandleProps.onMouseDown(e);
+              }
+            }}
+            onMouseUp={() => setDraggingID(null)}
+          />
         </StyledTodoItem>
       )}
     </Draggable>

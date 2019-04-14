@@ -9,6 +9,7 @@ const StyledListItem = styled.li`
   background-color: #202020;
   margin: 0px 0px 10px 0px;
   transition: 0.25s background-color;
+  position: relative;
 
   &.active {
     background-color: #341;
@@ -20,6 +21,15 @@ const StyledListItem = styled.li`
 
   &.isDragging {
     background-color: #404040;
+  }
+
+  .dragHandle {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.2);
   }
 `;
 
@@ -47,20 +57,12 @@ export default function ListItem({
       {(provided, snapshot) => (
         <StyledListItem
           {...provided.draggableProps}
-          {...provided.dragHandleProps}
           ref={provided.innerRef}
           className={
             (active ? "active " : "") +
             (isDragging || snapshot.isDragging ? "isDragging " : "")
           }
           onClick={() => setSelectedList(list.id)}
-          onMouseDown={(e) => {
-            setDraggingID(list.id);
-            if (provided.dragHandleProps) {
-              provided.dragHandleProps.onMouseDown(e);
-            }
-          }}
-          onMouseUp={() => setDraggingID(null)}
           style={
             snapshot.isDropAnimating
               ? {
@@ -94,6 +96,17 @@ export default function ListItem({
             Update
           </span>
           <span> {list.order}</span>
+          <span
+            {...provided.dragHandleProps}
+            className="dragHandle"
+            onMouseDown={(e) => {
+              setDraggingID(list.id);
+              if (provided.dragHandleProps) {
+                provided.dragHandleProps.onMouseDown(e);
+              }
+            }}
+            onMouseUp={() => setDraggingID(null)}
+          />
         </StyledListItem>
       )}
     </Draggable>
