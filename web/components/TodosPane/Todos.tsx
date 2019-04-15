@@ -6,6 +6,10 @@ import { Droppable } from "react-beautiful-dnd";
 
 const StyledTodos = styled.ul`
   list-style-type: none;
+
+  h2 {
+    text-align: left;
+  }
 `;
 
 interface TodosProps {
@@ -34,6 +38,7 @@ export default function Todos({
     <Droppable droppableId={selectedList.id}>
       {(provided) => (
         <StyledTodos {...provided.droppableProps} ref={provided.innerRef}>
+          <h2>{selectedList.name}</h2>
           {sortedTodos.map((todo, idx) => {
             const isEditing = currEditing === todo.id;
             const isSelected = selectedTodoId === todo.id;

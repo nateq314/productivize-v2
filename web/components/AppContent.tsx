@@ -28,6 +28,8 @@ export default function AppContent(props: AppContentProps) {
   } = props;
   const [selectedListIds, setSelectedListIds] = useState([lists[0].id]);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
+  // filter out undefined lists, e.g. in the case where
+  // one of the selected lists got deleted
   const selectedLists = selectedListIds
     .map((listId) => lists.find((l) => listId === l.id))
     .filter((list) => list) as TodoList[];
@@ -39,8 +41,8 @@ export default function AppContent(props: AppContentProps) {
     : undefined;
 
   if (selectedLists.length === 0) {
-    // The list that was selected got deleted. It's okay to do the below since
-    // it's guaranteed that there will always be at least one list.
+    // Only one list was selected, and it got deleted. It's okay to do the
+    // below since it's guaranteed that there will always be at least one list.
     setSelectedListIds([lists[0].id]);
     setSelectedTodoId(null);
   }
@@ -69,10 +71,12 @@ export default function AppContent(props: AppContentProps) {
         lists={lists}
         openNewListModal={openNewListModal}
         openUpdateListModal={openUpdateListModal}
-        selectedLists={selectedListIds}
-        setSelectedLists={(ids: string[]) => {
+        selectedListIds={selectedListIds}
+        setSelectedListIds={(ids: string[]) => {
           setSelectedListIds(ids);
-          setSelectedTodoId(null);
+          if (selectedTodo && !ids.includes(selectedTodo.list_id)) {
+            setSelectedTodoId(null);
+          }
         }}
       />
       <TodosPane

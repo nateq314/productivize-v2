@@ -22,16 +22,16 @@ const StyledListsPane = styled.section`
 
 interface ListsPaneProps {
   lists: TodoList[];
-  selectedLists: string[];
+  selectedListIds: string[];
   openNewListModal: () => void;
   openUpdateListModal: (list: TodoList) => void;
-  setSelectedLists: (listIds: string[]) => void;
+  setSelectedListIds: (listIds: string[]) => void;
 }
 
 export default function ListsPane({
   lists,
-  selectedLists,
-  setSelectedLists,
+  selectedListIds,
+  setSelectedListIds,
   openNewListModal,
   openUpdateListModal
 }: ListsPaneProps) {
@@ -122,9 +122,9 @@ export default function ListsPane({
               draggingID={draggingID}
               lists={sortedLists}
               openUpdateListModal={openUpdateListModal}
-              selectedLists={selectedLists}
+              selectedListIds={selectedListIds}
               setDraggingID={setDraggingID}
-              setSelectedLists={setSelectedLists}
+              setSelectedListIds={setSelectedListIds}
             />
           </DragDropContext>
           <div className="add_new" onClick={openNewListModal}>

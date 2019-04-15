@@ -40,7 +40,8 @@ interface ListItemProps {
   list: TodoList;
   openUpdateListModal: (list: TodoList) => void;
   setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
-  setSelectedLists: (listIds: string[]) => void;
+  setSelectedListIds: (listIds: string[]) => void;
+  toggleListSelectedStatus: (listId: string) => void;
 }
 
 export default function ListItem({
@@ -49,7 +50,8 @@ export default function ListItem({
   isDragging,
   list,
   setDraggingID,
-  setSelectedLists,
+  setSelectedListIds,
+  toggleListSelectedStatus,
   openUpdateListModal
 }: ListItemProps) {
   let mouseXY = { x: 0, y: 0 };
@@ -67,7 +69,8 @@ export default function ListItem({
             const dx = e.screenX - mouseXY.x;
             const dy = e.screenY - mouseXY.y;
             if (dx <= 2 && dy <= 2) {
-              setSelectedLists([list.id]);
+              if (e.shiftKey) toggleListSelectedStatus(list.id);
+              else setSelectedListIds([list.id]);
             }
             mouseXY = { x: 0, y: 0 };
           }}
