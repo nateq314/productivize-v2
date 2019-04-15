@@ -38,6 +38,7 @@ export const UPDATE_LIST = gql`
       order
       todos {
         id
+        list_id
         added_on
         content
         completed
@@ -68,6 +69,7 @@ export const CREATE_TODO = gql`
       remind_on: $remind_on
     ) {
       id
+      list_id
       added_on
       content
       completed
@@ -114,6 +116,7 @@ export const UPDATE_TODO = gql`
       remind_on: $remind_on
     ) {
       id
+      list_id
       added_on
       content
       completed

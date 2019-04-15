@@ -13,7 +13,6 @@ import { UPDATE_TODO } from "../other/mutations";
 interface TodoDateTimeInputProps {
   field: "deadline" | "remind_on";
   placeholder: string;
-  selectedListId: string;
   todo: Todo;
   includeTime?: boolean;
 }
@@ -22,7 +21,6 @@ export default function TodoDateTimeInput({
   field,
   includeTime,
   placeholder,
-  selectedListId,
   todo
 }: TodoDateTimeInputProps) {
   const Picker = includeTime ? DateTimePicker : DatePicker;
@@ -37,7 +35,7 @@ export default function TodoDateTimeInput({
               onChange={(newDateTime: Date) => {
                 updateTodo({
                   variables: {
-                    listId: selectedListId,
+                    listId: todo.list_id,
                     todoId: todo.id,
                     [field]: newDateTime
                   },
@@ -58,7 +56,7 @@ export default function TodoDateTimeInput({
                     onClick: () => {
                       updateTodo({
                         variables: {
-                          listId: selectedListId,
+                          listId: todo.list_id,
                           todoId: todo.id,
                           [field]: null
                         },

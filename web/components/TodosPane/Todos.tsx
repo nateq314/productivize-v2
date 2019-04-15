@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import styled from "styled-components";
-import { Todo, TodoList } from "../Main";
+import { TodoList } from "../Main";
 import TodoItem from "./TodoItem";
 import { Droppable } from "react-beautiful-dnd";
 
@@ -14,7 +14,6 @@ interface TodosProps {
   selectedTodoId: string | null;
   setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
-  todos: Todo[];
 }
 
 export default function Todos({
@@ -22,16 +21,20 @@ export default function Todos({
   selectedList,
   selectedTodoId,
   setDraggingID,
-  setSelectedTodoId,
-  todos
+  setSelectedTodoId
 }: TodosProps) {
   const [currEditing, setCurrEditing] = useState<string | null>(null);
+  const sortedTodos = useMemo(() => {
+    return [...selectedList.todos].sort((todoA, todoB) =>
+      todoB.order > todoA.order ? -1 : 1
+    );
+  }, [selectedList.todos]);
 
   return (
     <Droppable droppableId={selectedList.id}>
       {(provided) => (
         <StyledTodos {...provided.droppableProps} ref={provided.innerRef}>
-          {todos.map((todo, idx) => {
+          {sortedTodos.map((todo, idx) => {
             const isEditing = currEditing === todo.id;
             const isSelected = selectedTodoId === todo.id;
             return (

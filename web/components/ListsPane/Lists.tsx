@@ -16,17 +16,17 @@ interface ListsProps {
   draggingID: string | null;
   lists: TodoList[];
   openUpdateListModal: (list: TodoList) => void;
-  selectedList: string;
+  selectedLists: string[];
   setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
-  setSelectedList: (listId: string) => void;
+  setSelectedLists: (listIds: string[]) => void;
 }
 
 export default function Lists({
   draggingID,
   lists,
-  selectedList,
+  selectedLists,
   setDraggingID,
-  setSelectedList,
+  setSelectedLists,
   openUpdateListModal
 }: ListsProps) {
   return (
@@ -34,7 +34,7 @@ export default function Lists({
       {(provided) => (
         <StyledLists {...provided.droppableProps} ref={provided.innerRef}>
           {lists.map((list, index) => {
-            const active = selectedList === list.id;
+            const active = selectedLists.indexOf(list.id) >= 0;
             return (
               <ListItem
                 key={list.id}
@@ -44,7 +44,7 @@ export default function Lists({
                 list={list}
                 openUpdateListModal={openUpdateListModal}
                 setDraggingID={setDraggingID}
-                setSelectedList={setSelectedList}
+                setSelectedLists={setSelectedLists}
               />
             );
           })}

@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { Todo, TodoList } from "./Main";
+import { Todo } from "./Main";
 import Toggle from "./Toggle";
 import TodoContent from "./TodoContent";
 import TodoDescription from "./TodoDescription";
@@ -24,28 +24,22 @@ const StyledTodoDetails = styled.section`
 `;
 
 interface TodoDetailsProps {
-  selectedList: TodoList;
   todo: Todo;
 }
 
 export default function TodoDetails(props: TodoDetailsProps) {
-  const { selectedList, todo } = props;
+  const { todo } = props;
 
   return (
     <StyledTodoDetails className={todo.important ? "important " : ""}>
       <header>
-        <Toggle selectedList={selectedList} todo={todo} toggleFlag="completed">
+        <Toggle todo={todo} toggleFlag="completed">
           {(toggle) => (
             <input type="checkbox" checked={todo.completed} onChange={toggle} />
           )}
         </Toggle>
-        <TodoContent
-          endEdit={() => {}}
-          isEditing={false}
-          selectedList={selectedList}
-          todo={todo}
-        />
-        <Toggle selectedList={selectedList} todo={todo} toggleFlag="important">
+        <TodoContent endEdit={() => {}} isEditing={false} todo={todo} />
+        <Toggle todo={todo} toggleFlag="important">
           {(toggle) => (
             <a onClick={toggle} className="toggleImportant">
               Important
@@ -57,7 +51,6 @@ export default function TodoDetails(props: TodoDetailsProps) {
         <TodoDateTimeInput
           field="deadline"
           placeholder="Set due date"
-          selectedListId={selectedList.id}
           todo={todo}
         />
       </div>
@@ -66,12 +59,11 @@ export default function TodoDetails(props: TodoDetailsProps) {
           field="remind_on"
           includeTime
           placeholder="Remind me"
-          selectedListId={selectedList.id}
           todo={todo}
         />
       </div>
       <h4>Description</h4>
-      <TodoDescription selectedListId={selectedList.id} todo={todo} />
+      <TodoDescription todo={todo} />
     </StyledTodoDetails>
   );
 }

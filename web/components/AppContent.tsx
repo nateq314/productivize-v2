@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { Todo, TodoList } from "./Main";
+import { TodoList } from "./Main";
 import ListsPane from "./ListsPane/ListsPane";
 import TodosPane from "./TodosPane/TodosPane";
 import TodoDetails from "./TodoDetails";
@@ -26,18 +26,22 @@ export default function AppContent(props: AppContentProps) {
     openNewListModal,
     openUpdateListModal
   } = props;
-  const [selectedListId, setSelectedListId] = useState(lists[0].id);
+  const [selectedListIds, setSelectedListIds] = useState([lists[0].id]);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
-  const selectedList = lists.find(
-    (list) => selectedListId === list.id
-  ) as TodoList;
-  const todos = selectedList ? selectedList.todos : [];
-  const selectedTodo = todos.find((t) => t.id === selectedTodoId) as Todo;
+  const selectedLists = selectedListIds
+    .map((listId) => lists.find((l) => listId === l.id))
+    .filter((list) => list) as TodoList[];
+  const selectedTodo = selectedTodoId
+    ? selectedLists
+        .map((l) => l.todos)
+        .reduce((allTodos, currTodos) => allTodos.concat(currTodos))
+        .find((todo) => todo.id === selectedTodoId)
+    : undefined;
 
-  if (!selectedList) {
+  if (selectedLists.length === 0) {
     // The list that was selected got deleted. It's okay to do the below since
     // it's guaranteed that there will always be at least one list.
-    setSelectedListId(lists[0].id);
+    setSelectedListIds([lists[0].id]);
     setSelectedTodoId(null);
   }
 
@@ -65,21 +69,18 @@ export default function AppContent(props: AppContentProps) {
         lists={lists}
         openNewListModal={openNewListModal}
         openUpdateListModal={openUpdateListModal}
-        selectedList={selectedListId}
-        setSelectedList={(id: string) => {
-          setSelectedListId(id);
+        selectedLists={selectedListIds}
+        setSelectedLists={(ids: string[]) => {
+          setSelectedListIds(ids);
           setSelectedTodoId(null);
         }}
       />
       <TodosPane
-        todos={todos}
-        selectedList={selectedList}
+        selectedLists={selectedLists}
         selectedTodoId={selectedTodoId}
         setSelectedTodoId={setSelectedTodoId}
       />
-      {selectedTodoId && (
-        <TodoDetails selectedList={selectedList} todo={selectedTodo} />
-      )}
+      {selectedTodo && <TodoDetails todo={selectedTodo} />}
     </StyledAppContent>
   );
 }

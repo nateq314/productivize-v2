@@ -12,10 +12,10 @@ const StyledCreateNewTodo = styled.form`
 `;
 
 interface NewTodoInputProps {
-  selectedList: TodoList;
+  selectedLists: TodoList[];
 }
 
-export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
+export default function NewTodoInput({ selectedLists }: NewTodoInputProps) {
   const [content, setContent] = useState("");
   const [readonly, setReadonly] = useState(false);
   const optimisticResponse = {
@@ -23,7 +23,7 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
     createTodo: {
       __typename: "Todo",
       id: "temp",
-      list_id: selectedList.id,
+      list_id: selectedLists[0].id,
       added_on: new Date().toISOString(),
       completed: false,
       completed_on: null,
@@ -31,16 +31,16 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
       deadline: null,
       description: "",
       important: false,
-      order: selectedList.todos.length + 1,
+      order: selectedLists[0].todos.length + 1,
       remind_on: null
     }
   };
 
   useEffect(() => {
-    if (!selectedList.todos.find((todo) => todo.id === "temp")) {
+    if (!selectedLists[0].todos.find((todo) => todo.id === "temp")) {
       setReadonly(false);
     }
-  }, [selectedList.todos]);
+  }, [selectedLists[0].todos]);
 
   return (
     <Mutation
@@ -52,8 +52,8 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
           cache.writeData({
             data: {
               list: {
-                ...selectedList,
-                todos: selectedList.todos.concat(createTodo)
+                ...selectedLists[0],
+                todos: selectedLists[0].todos.concat(createTodo)
               }
             }
           });
@@ -70,7 +70,7 @@ export default function NewTodoInput({ selectedList }: NewTodoInputProps) {
                   content,
                   deadline: null,
                   important: false,
-                  listId: selectedList.id,
+                  listId: selectedLists[0].id,
                   remind_on: null
                 }
               };

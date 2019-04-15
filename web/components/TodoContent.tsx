@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Mutation } from "react-apollo";
 import styled from "styled-components";
-import { Todo, TodoList } from "./Main";
+import { Todo } from "./Main";
 import { UPDATE_TODO } from "../other/mutations";
 import Input from "./Input";
 
@@ -12,12 +12,11 @@ const StyledTodoContent = styled.form`
 interface TodoContentProps {
   endEdit: () => void;
   isEditing: boolean;
-  selectedList: TodoList;
   todo: Todo;
 }
 
 export default function TodoContent(props: TodoContentProps) {
-  const { endEdit, isEditing, selectedList, todo } = props;
+  const { endEdit, isEditing, todo } = props;
   const [pendingContent, setPendingContent] = useState(todo.content);
   useEffect(() => {
     setPendingContent(todo.content);
@@ -41,7 +40,7 @@ export default function TodoContent(props: TodoContentProps) {
               e.preventDefault();
               updateTodo({
                 variables: {
-                  listId: selectedList.id,
+                  listId: todo.list_id,
                   todoId: todo.id,
                   content: pendingContent
                 }

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Mutation } from "react-apollo";
 import { DragDropContext } from "react-beautiful-dnd";
 import styled from "styled-components";
@@ -13,24 +13,17 @@ const StyledTodosPane = styled.section`
 `;
 
 interface TodosPaneProps {
-  selectedList: TodoList;
+  selectedLists: TodoList[];
   selectedTodoId: string | null;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
-  todos: Todo[];
 }
 
 export default function TodosPane({
-  selectedList,
+  selectedLists,
   selectedTodoId,
-  setSelectedTodoId,
-  todos
+  setSelectedTodoId
 }: TodosPaneProps) {
   const [draggingID, setDraggingID] = useState<string | null>(null);
-  const sortedTodos = useMemo(() => {
-    return [...todos].sort((todoA, todoB) =>
-      todoB.order > todoA.order ? -1 : 1
-    );
-  }, [todos]);
 
   return (
     <Mutation
@@ -44,9 +37,13 @@ export default function TodosPane({
           cache.writeQuery({
             query: FETCH_LISTS,
             data: {
+              // TODO: find a more efficient way to calculate this stuff
               lists: lists.map((list) => {
-                if (list.id !== selectedList.id) return list;
-                const prevOrder = (todos.find(
+                if (list.id !== updateTodo.list_id) return list;
+                const prevList = selectedLists.find(
+                  (l) => l.id === updateTodo.list_id
+                ) as TodoList;
+                const prevOrder = (prevList.todos.find(
                   (todo) => todo.id === updateTodo.id
                 ) as Todo).order;
                 const newOrder = updateTodo.order;
@@ -93,7 +90,7 @@ export default function TodosPane({
     >
       {(updateTodo) => (
         <StyledTodosPane>
-          <CreateNewTodo selectedList={selectedList} />
+          <CreateNewTodo selectedLists={selectedLists} />
           <DragDropContext
             // onDragStart={(start, provided) => {
             // }}
@@ -101,7 +98,10 @@ export default function TodosPane({
             // }}
             onDragEnd={(result) => {
               const { destination, source, draggableId } = result;
-              const todo = sortedTodos[source.index];
+              const todo = selectedLists
+                .map((l) => l.todos)
+                .reduce((allTodos, currTodos) => allTodos.concat(currTodos))
+                .find((t) => t.id === draggableId) as Todo;
               setDraggingID(null);
               if (!destination) return;
               if (
@@ -115,7 +115,7 @@ export default function TodosPane({
 
               updateTodo({
                 variables: {
-                  listId: selectedList.id,
+                  listId: todo.list_id,
                   todoId: draggableId,
                   order: destination.index + 1
                 },
@@ -129,14 +129,16 @@ export default function TodosPane({
               });
             }}
           >
-            <Todos
-              draggingID={draggingID}
-              selectedList={selectedList}
-              selectedTodoId={selectedTodoId}
-              setDraggingID={setDraggingID}
-              setSelectedTodoId={setSelectedTodoId}
-              todos={sortedTodos}
-            />
+            {selectedLists.map((list) => (
+              <Todos
+                key={list.id}
+                draggingID={draggingID}
+                selectedList={list}
+                selectedTodoId={selectedTodoId}
+                setDraggingID={setDraggingID}
+                setSelectedTodoId={setSelectedTodoId}
+              />
+            ))}
           </DragDropContext>
         </StyledTodosPane>
       )}

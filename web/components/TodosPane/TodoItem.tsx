@@ -83,11 +83,7 @@ export default function TodoItem({
               : provided.draggableProps.style
           }
         >
-          <Toggle
-            selectedList={selectedList}
-            todo={todo}
-            toggleFlag="completed"
-          >
+          <Toggle todo={todo} toggleFlag="completed">
             {(toggle) => (
               <input
                 type="checkbox"
@@ -99,7 +95,6 @@ export default function TodoItem({
           <TodoContent
             endEdit={() => setCurrEditing(null)}
             isEditing={isEditing}
-            selectedList={selectedList}
             todo={todo}
           />
           <DeleteTodo selectedList={selectedList} todo={todo}>
@@ -119,11 +114,7 @@ export default function TodoItem({
           >
             {isSelected ? " Deselect" : " Select"}
           </a>
-          <Toggle
-            selectedList={selectedList}
-            todo={todo}
-            toggleFlag="important"
-          >
+          <Toggle todo={todo} toggleFlag="important">
             {(toggle) => (
               <a onClick={toggle} className="toggleImportant">
                 {" "}

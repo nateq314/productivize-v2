@@ -1,21 +1,15 @@
 import React from "react";
 import { Mutation } from "react-apollo";
-import { Todo, TodoList } from "./Main";
+import { Todo } from "./Main";
 import { UPDATE_TODO } from "../other/mutations";
 
 interface ToggleProps {
   children: (toggle: () => void) => React.ReactNode;
-  selectedList: TodoList;
   todo: Todo;
   toggleFlag: "completed" | "important";
 }
 
-export default function Toggle({
-  children,
-  selectedList,
-  todo,
-  toggleFlag
-}: ToggleProps) {
+export default function Toggle({ children, todo, toggleFlag }: ToggleProps) {
   return (
     <Mutation
       mutation={UPDATE_TODO}
@@ -31,7 +25,7 @@ export default function Toggle({
         const toggle = () => {
           updateTodo({
             variables: {
-              listId: selectedList.id,
+              listId: todo.list_id,
               todoId: todo.id,
               [toggleFlag]: !todo[toggleFlag]
             }

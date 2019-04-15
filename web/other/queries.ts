@@ -40,6 +40,7 @@ export const FETCH_LISTS = gql`
       order
       todos {
         id
+        list_id
         added_on
         content
         completed

@@ -29,7 +29,6 @@ const StyledTodoDescription = styled.textarea`
 `;
 
 interface TodoDescriptionProps {
-  selectedListId: string;
   todo: Todo;
 }
 
@@ -40,10 +39,7 @@ interface SubscriptionData {
 
 let inputObserver$ = new Subject<SubscriptionData>();
 
-export default function TodoDescription({
-  selectedListId,
-  todo
-}: TodoDescriptionProps) {
+export default function TodoDescription({ todo }: TodoDescriptionProps) {
   const [isEditing, setEditingStatus] = useState(false);
   const [pendingDesc, setPendingDesc] = useState(todo.description);
 
@@ -65,7 +61,7 @@ export default function TodoDescription({
         // should be reset to `todo.description`.
         updateTodo({
           variables: {
-            listId: selectedListId,
+            listId: todo.list_id,
             todoId: todo.id,
             description
           }
