@@ -304,22 +304,31 @@ export default {
     authorize(ctx);
     try {
       let uid = "";
-      let metadata = null;
+      let metadata: { [key: string]: any } | null = null;
       // ====== BEGIN TRANSACTION =============================================
       const todoUpdated = await firestore.runTransaction(async (tx) => {
-        const todoListDocRef = listsCollRef.doc(args.listId);
-        const todoListDocSnapshot = await tx.get(todoListDocRef);
-        uid = (todoListDocSnapshot.data() as ListDB).uid;
-        if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
+        const sourceTodoListDocRef = listsCollRef.doc(args.listId);
+        let destTodoListDocRef: FirebaseFirestore.DocumentReference = sourceTodoListDocRef;
+        const sourceTodoListDocSnapshot = await tx.get(sourceTodoListDocRef);
+        uid = (sourceTodoListDocSnapshot.data() as ListDB).uid;
+        let destListUid: string = uid;
+        if (args.destListId) {
+          destTodoListDocRef = listsCollRef.doc(args.destListId);
+          destListUid = ((await tx.get(destTodoListDocRef)).data() as ListDB)
+            .uid;
+        }
+        const ctxUid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
+        if (ctxUid !== uid || ctxUid !== destListUid) {
           // TODO: test this
-          throw new ForbiddenError(
-            "Not authorized to touch anything in this list."
-          );
+          throw new ForbiddenError("Not authorized to touch this data.");
         }
         const { content, order } = args;
-        const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
-        const todoData = (await tx.get(todoDocRef)).data() as TodoDB;
-        const updates: any = {};
+        const sourceTodoDocRef = sourceTodoListDocRef
+          .collection("todos")
+          .doc(args.todoId);
+        let destTodoDocRef = sourceTodoDocRef;
+        const todoData = (await tx.get(sourceTodoDocRef)).data() as TodoDB;
+        const updates: any = { ...todoData };
 
         // TODO: find a better way to do this
         if (args.hasOwnProperty("completed")) {
@@ -340,34 +349,62 @@ export default {
           let todosQuerySnapshot: FirebaseFirestore.QuerySnapshot;
           let adjustment: -1 | 1;
           metadata = { prevOrder: todoData.order };
-          if (order > todoData.order) {
-            todosQuerySnapshot = await tx.get(
-              todoListDocRef
+          if (args.destListId) {
+            // TODO IS BEING MOVED TO ANOTHER LIST
+            const sourceTodosQuerySnapshot = await tx.get(
+              sourceTodoListDocRef
                 .collection("todos")
-                .where("order", "<=", order)
-                .where("order", ">=", todoData.order)
+                .where("order", ">", todoData.order)
             );
-            adjustment = -1;
+            const destTodosQuerySnapshot = await tx.get(
+              destTodoListDocRef.collection("todos").where("order", ">=", order)
+            );
+            sourceTodosQuerySnapshot.forEach((todo) => {
+              // decrement source todos
+              const newOrder = (todo.data() as TodoDB).order - 1;
+              tx.update(todo.ref, { order: newOrder });
+            });
+            destTodosQuerySnapshot.forEach((todo) => {
+              // increment destination todos
+              const newOrder = (todo.data() as TodoDB).order + 1;
+              tx.update(todo.ref, { order: newOrder });
+            });
+            await tx.delete(sourceTodoDocRef);
+            destTodoDocRef = destTodoListDocRef
+              .collection("todos")
+              .doc(args.todoId);
+            metadata.prevListId = sourceTodoListDocRef.id;
           } else {
-            todosQuerySnapshot = await tx.get(
-              todoListDocRef
-                .collection("todos")
-                .where("order", ">=", order)
-                .where("order", "<=", todoData.order)
-            );
-            adjustment = 1;
+            // TODO IS CHANGING ORDER WITHIN THE SAME LIST
+            if (order > todoData.order) {
+              todosQuerySnapshot = await tx.get(
+                sourceTodoListDocRef
+                  .collection("todos")
+                  .where("order", "<=", order)
+                  .where("order", ">=", todoData.order)
+              );
+              adjustment = -1;
+            } else {
+              todosQuerySnapshot = await tx.get(
+                sourceTodoListDocRef
+                  .collection("todos")
+                  .where("order", ">=", order)
+                  .where("order", "<=", todoData.order)
+              );
+              adjustment = +1;
+            }
+            todosQuerySnapshot.forEach((todo) => {
+              const newOrder = (todo.data() as TodoDB).order + adjustment;
+              tx.update(todo.ref, { order: newOrder });
+            });
           }
-          todosQuerySnapshot.forEach((todo) => {
-            const newOrder = (todo.data() as TodoDB).order + adjustment;
-            tx.update(todo.ref, { order: newOrder });
-          });
         }
-        await tx.update(todoDocRef, updates);
+        await tx.set(destTodoDocRef, updates);
         return {
           ...todoData,
           ...updates,
-          id: todoDocRef.id,
-          list_id: args.listId
+          id: destTodoDocRef.id,
+          list_id: destTodoListDocRef.id
         } as TodoDB & { id: string; list_id: string };
       });
       // ====== END TRANSACTION ===============================================

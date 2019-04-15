@@ -79,6 +79,7 @@ const schema = gql`
     deleteTodo(listId: String!, todoId: String!): Result!
     updateTodo(
       listId: String!
+      destListId: String
       todoId: String!
       completed: Boolean
       content: String
