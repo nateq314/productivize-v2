@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { TodoList } from "../Main";
 import TodoItem from "./TodoItem";
 import { Droppable } from "react-beautiful-dnd";
+import { DragState } from "./TodosPane";
 
 const StyledTodos = styled.ul`
   list-style-type: none;
@@ -13,18 +14,18 @@ const StyledTodos = styled.ul`
 `;
 
 interface TodosProps {
-  draggingID: string | null;
+  dragState: DragState;
   selectedList: TodoList;
   selectedTodoId: string | null;
-  setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
+  setDragState: React.Dispatch<React.SetStateAction<DragState>>;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export default function Todos({
-  draggingID,
+  dragState,
   selectedList,
   selectedTodoId,
-  setDraggingID,
+  setDragState,
   setSelectedTodoId
 }: TodosProps) {
   const [currEditing, setCurrEditing] = useState<string | null>(null);
@@ -46,12 +47,12 @@ export default function Todos({
               <TodoItem
                 key={todo.id}
                 index={idx}
-                isDragging={draggingID === todo.id}
+                isDragging={dragState.draggableID === todo.id}
                 isEditing={isEditing}
                 isSelected={isSelected}
                 selectedList={selectedList}
                 setCurrEditing={setCurrEditing}
-                setDraggingID={setDraggingID}
+                setDragState={setDragState}
                 setSelectedTodoId={setSelectedTodoId}
                 todo={todo}
               />

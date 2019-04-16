@@ -4,7 +4,7 @@ import { firestore } from "firebase-admin";
 export interface ListDB {
   name: string;
   order: number;
-  uid: string;
+  owners: string[];
 }
 
 export interface ListGQL extends ListDB {
@@ -47,6 +47,7 @@ const schema = gql`
     name: String!
     order: Int!
     todos: [Todo!]!
+    owners: [String!]!
   }
 
   type ListMutationEvent {

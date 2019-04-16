@@ -5,6 +5,7 @@ import DeleteTodo from "../DeleteTodo";
 import { Todo, TodoList } from "../Main";
 import TodoContent from "../TodoContent";
 import Toggle from "../Toggle";
+import { DragState } from "./TodosPane";
 
 const StyledTodoItem = styled.li`
   padding: 10px 0px;
@@ -45,7 +46,7 @@ interface TodoItemProps {
   isSelected: boolean;
   selectedList: TodoList;
   setCurrEditing: React.Dispatch<React.SetStateAction<string | null>>;
-  setDraggingID: React.Dispatch<React.SetStateAction<string | null>>;
+  setDragState: React.Dispatch<React.SetStateAction<DragState>>;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
   todo: Todo;
 }
@@ -56,7 +57,7 @@ export default function TodoItem({
   isEditing,
   isSelected,
   selectedList,
-  setDraggingID,
+  setDragState,
   setCurrEditing,
   setSelectedTodoId,
   todo
@@ -127,12 +128,18 @@ export default function TodoItem({
             {...provided.dragHandleProps}
             className="dragHandle"
             onMouseDown={(e) => {
-              setDraggingID(todo.id);
+              setDragState({
+                draggableID: todo.id
+              });
               if (provided.dragHandleProps) {
                 provided.dragHandleProps.onMouseDown(e);
               }
             }}
-            onMouseUp={() => setDraggingID(null)}
+            onMouseUp={() =>
+              setDragState({
+                draggableID: null
+              })
+            }
           />
         </StyledTodoItem>
       )}

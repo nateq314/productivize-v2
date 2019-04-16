@@ -50,21 +50,21 @@ export default {
       // ====== BEGIN TRANSACTION =============================================
       const listCreated = await firestore.runTransaction(async (tx) => {
         const currUserLists = await tx.get(
-          listsCollRef.where("uid", "==", current_uid)
+          listsCollRef.where("owners", "array-contains", current_uid)
         );
         const newListDocRef = listsCollRef.doc();
-        const newListData = {
+        const newListData: ListDB = {
           name: args.name,
           order: currUserLists.size + 1,
-          uid: current_uid
-        } as { [key: string]: any };
+          owners: [current_uid]
+        };
         tx.create(newListDocRef, newListData);
-        newListData.id = newListDocRef.id;
-        newListData.todos = [];
+        (newListData as ListGQL).id = newListDocRef.id;
+        (newListData as ListGQL).todos = [];
         return newListData as ListGQL;
       });
       // ====== END TRANSACTION ===============================================
-      pubsub.publish(LIST_EVENTS, { listCreated, uid: listCreated.uid });
+      pubsub.publish(LIST_EVENTS, { listCreated, owners: listCreated.owners });
       return listCreated;
     } catch (error) {
       console.error(error);
@@ -83,7 +83,7 @@ export default {
       // ====== BEGIN TRANSACTION =============================================
       const listDeleted = await firestore.runTransaction(async (tx) => {
         const deletedListData = (await tx.get(todoListDocRef)).data() as ListDB;
-        if (deletedListData.uid !== current_uid) {
+        if (!deletedListData.owners.includes(current_uid)) {
           // TODO: test this
           throw new ForbiddenError(
             "You are not authorized to touch this list."
@@ -107,7 +107,7 @@ export default {
         return deletedListData as ListGQL;
       });
       // ====== END TRANSACTION ===============================================
-      pubsub.publish(LIST_EVENTS, { listDeleted, uid: listDeleted.uid });
+      pubsub.publish(LIST_EVENTS, { listDeleted, owners: listDeleted.owners });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -120,7 +120,7 @@ export default {
    *********************/
   async updateList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
-    let uid = "";
+    let owners: string[] = [];
     let metadata = null;
     try {
       // ====== BEGIN TRANSACTION =============================================
@@ -128,8 +128,8 @@ export default {
         const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
         const todoListDocRef = listsCollRef.doc(args.id);
         const todoListDocSnapshot = await tx.get(todoListDocRef);
-        uid = (todoListDocSnapshot.data() as ListDB).uid;
-        if (uid !== current_uid) {
+        owners = (todoListDocSnapshot.data() as ListDB).owners;
+        if (!owners.includes(current_uid)) {
           // TODO: test this
           throw new ForbiddenError(
             "Not authorized to touch anything in this list."
@@ -182,11 +182,10 @@ export default {
         };
       });
       // ====== END TRANSACTION ===============================================
-      console.log("listUpdated:", listUpdated);
       pubsub.publish(LIST_EVENTS, {
         listUpdated,
         metadata,
-        uid
+        owners
       });
       return listUpdated;
     } catch (error) {
@@ -201,13 +200,13 @@ export default {
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
-      let uid = "";
+      let owners: string[] = [];
       // ====== BEGIN TRANSACTION =============================================
       const todoCreated = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
         const todosCollRef = todoListDocRef.collection("todos");
         const todoListDocSnapshot = await tx.get(todoListDocRef);
-        uid = (todoListDocSnapshot.data() as ListDB).uid;
+        owners = (todoListDocSnapshot.data() as ListDB).owners;
         const currTodosSnapshot = await tx.get(todosCollRef);
         const newTodoDocRef = todosCollRef.doc();
         const added_on = new Date();
@@ -235,7 +234,7 @@ export default {
           ...todoCreated,
           added_on: todoCreated.added_on.toISOString()
         },
-        uid
+        owners
       });
       return todoCreated;
     } catch (error) {
@@ -249,14 +248,14 @@ export default {
    *********************/
   async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
-    let uid = "";
+    let owners: string[] = [];
     try {
       // ====== BEGIN TRANSACTION =============================================
       const todoDeleted = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
         const todoListDocSnapshot = await tx.get(todoListDocRef);
-        uid = (todoListDocSnapshot.data() as ListDB).uid;
-        if (uid !== (ctx.user as fbAdmin.auth.DecodedIdToken).uid) {
+        owners = (todoListDocSnapshot.data() as ListDB).owners;
+        if (!owners.includes((ctx.user as fbAdmin.auth.DecodedIdToken).uid)) {
           // TODO: test this
           throw new ForbiddenError(
             "Not authorized to touch anything in this list."
@@ -286,7 +285,7 @@ export default {
 
       pubsub.publish(LIST_EVENTS, {
         todoDeleted: convertDateFieldsForPublishing(todoDeleted),
-        uid
+        owners
       });
       return { success: true };
     } catch (error) {
@@ -303,22 +302,23 @@ export default {
     // set() method handles both creation and updating.
     authorize(ctx);
     try {
-      let uid = "";
+      let owners: string[] = [];
+      let destListOwners: string[] = [];
       let metadata: { [key: string]: any } | null = null;
       // ====== BEGIN TRANSACTION =============================================
       const todoUpdated = await firestore.runTransaction(async (tx) => {
         const sourceTodoListDocRef = listsCollRef.doc(args.listId);
         let destTodoListDocRef: FirebaseFirestore.DocumentReference = sourceTodoListDocRef;
         const sourceTodoListDocSnapshot = await tx.get(sourceTodoListDocRef);
-        uid = (sourceTodoListDocSnapshot.data() as ListDB).uid;
-        let destListUid: string = uid;
+        owners = (sourceTodoListDocSnapshot.data() as ListDB).owners;
+        destListOwners = [...owners];
         if (args.destListId) {
           destTodoListDocRef = listsCollRef.doc(args.destListId);
-          destListUid = ((await tx.get(destTodoListDocRef)).data() as ListDB)
-            .uid;
+          destListOwners = ((await tx.get(destTodoListDocRef)).data() as ListDB)
+            .owners;
         }
         const ctxUid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
-        if (ctxUid !== uid || ctxUid !== destListUid) {
+        if (!(owners.includes(ctxUid) && destListOwners.includes(ctxUid))) {
           // TODO: test this
           throw new ForbiddenError("Not authorized to touch this data.");
         }
@@ -411,7 +411,7 @@ export default {
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
         metadata,
-        uid
+        owners: destListOwners
       });
       return todoUpdated;
     } catch (error) {

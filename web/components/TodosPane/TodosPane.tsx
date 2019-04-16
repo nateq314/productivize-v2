@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Mutation } from "react-apollo";
-import { DragDropContext } from "react-beautiful-dnd";
+import { DragDropContext, DraggableLocation } from "react-beautiful-dnd";
 import styled from "styled-components";
 import { Todo, TodoList } from "../Main";
 import CreateNewTodo from "../CreateNewTodo";
@@ -18,12 +18,20 @@ interface TodosPaneProps {
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
+export interface DragState {
+  draggableID: string | null;
+  source?: DraggableLocation;
+  dest?: DraggableLocation | null;
+}
+
 export default function TodosPane({
   selectedLists,
   selectedTodoId,
   setSelectedTodoId
 }: TodosPaneProps) {
-  const [draggingID, setDraggingID] = useState<string | null>(null);
+  const [dragState, setDragState] = useState<DragState>({
+    draggableID: null
+  });
 
   return (
     <Mutation
@@ -129,17 +137,31 @@ export default function TodosPane({
         <StyledTodosPane>
           <CreateNewTodo selectedLists={selectedLists} />
           <DragDropContext
-            // onDragStart={(start, provided) => {
-            // }}
-            // onDragUpdate={(update, provided) => {
-            // }}
+            onDragStart={(start, provided) => {
+              setDragState({
+                draggableID: start.draggableId,
+                source: start.source,
+                dest: {
+                  droppableId: start.source.droppableId,
+                  index: start.source.index
+                }
+              });
+            }}
+            onDragUpdate={(update, provided) => {
+              setDragState({
+                ...dragState,
+                dest: update.destination
+              });
+            }}
             onDragEnd={(result) => {
               const { destination, source, draggableId } = result;
               const todo = selectedLists
                 .map((l) => l.todos)
                 .reduce((allTodos, currTodos) => allTodos.concat(currTodos))
                 .find((t) => t.id === draggableId) as Todo;
-              setDraggingID(null);
+              setDragState({
+                draggableID: null
+              });
               if (!destination) return;
               const changedLists =
                 destination.droppableId !== source.droppableId;
@@ -171,10 +193,10 @@ export default function TodosPane({
             {selectedLists.map((list) => (
               <Todos
                 key={list.id}
-                draggingID={draggingID}
+                dragState={dragState}
                 selectedList={list}
                 selectedTodoId={selectedTodoId}
-                setDraggingID={setDraggingID}
+                setDragState={setDragState}
                 setSelectedTodoId={setSelectedTodoId}
               />
             ))}

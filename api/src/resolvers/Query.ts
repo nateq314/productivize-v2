@@ -14,7 +14,7 @@ export default {
       const querySnapshot = await fbAdmin
         .firestore()
         .collection("lists")
-        .where("uid", "==", uid)
+        .where("owners", "array-contains", uid)
         .get();
       const lists = querySnapshot.docs.map((doc) => {
         const data = doc.data();
