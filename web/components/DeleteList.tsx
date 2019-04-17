@@ -1,12 +1,12 @@
 import React from "react";
 import { Mutation } from "react-apollo";
 import { DELETE_LIST } from "../other/mutations";
-import { TodoList, TodoListsQueryResult } from "./Main";
+import { TodoListsQueryResult, TodoList } from "./Main";
 import { FETCH_LISTS } from "../other/queries";
 
 interface DeleteListProps {
   children: (configuredMutationFn: () => void) => React.ReactNode;
-  listId: string;
+  list: TodoList;
 }
 
 const optimisticResponse = {
@@ -18,7 +18,7 @@ const optimisticResponse = {
   }
 };
 
-export default function DeleteList({ children, listId }: DeleteListProps) {
+export default function DeleteList({ children, list }: DeleteListProps) {
   return (
     <Mutation
       mutation={DELETE_LIST}
@@ -36,7 +36,12 @@ export default function DeleteList({ children, listId }: DeleteListProps) {
             cache.writeQuery({
               query: FETCH_LISTS,
               data: {
-                lists: lists.filter((list) => list.id !== listId)
+                lists: lists
+                  .filter((l) => l.id !== list.id)
+                  .map((l) => ({
+                    ...l,
+                    order: l.order > list.order ? l.order - 1 : l.order
+                  }))
               }
             });
           }
@@ -47,7 +52,7 @@ export default function DeleteList({ children, listId }: DeleteListProps) {
         children(() => {
           deleteList({
             variables: {
-              id: listId
+              id: list.id
             }
           });
         })

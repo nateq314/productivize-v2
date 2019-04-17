@@ -22,10 +22,17 @@ export interface TodoListsQueryResult {
   lists: TodoList[];
 }
 
+interface ListMember {
+  is_admin: boolean;
+  pending_acceptance: boolean;
+  user: any; // TODO: type this
+}
+
 export interface TodoList {
   id: string;
   name: string;
   order: number;
+  members: ListMember[];
   todos: Todo[];
 }
 

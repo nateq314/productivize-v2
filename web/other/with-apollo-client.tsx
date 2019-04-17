@@ -53,16 +53,20 @@ async function autoLogin(ctx: NextContext) {
   } else if (session) {
     // User is re-visiting the site. Get the user info. No need to set cookie as it already exists.
     // fetch user data from API using the session (`login` mutation)
-    const response = await api.post({
-      query: LOGIN.replace(/\s+/, " "),
-      variables: { session }
-    });
-    const { user, error } = response.data.login;
-    if (error) {
+    try {
+      const response = await api.post({
+        query: LOGIN.replace(/\s+/, " "),
+        variables: { session }
+      });
+      const { user, error } = response.data.login;
+      if (error) {
+        console.error(error);
+        destroyCookie(ctx, "session", {});
+        return {};
+      } else return { user, session };
+    } catch (error) {
       console.error(error);
-      destroyCookie(ctx, "session", {});
-      return {};
-    } else return { user, session };
+    }
   }
   return {};
 }
@@ -106,6 +110,17 @@ export default (App: any) => {
           // for the purposes of running getDataFromTree, send token as a header
           apollo = initApollo({}, { headers: { session } });
           try {
+            apollo.writeQuery({
+              query: FETCH_CURRENT_USER,
+              data: {
+                current_user: user
+                  ? {
+                      ...user,
+                      __typename: "User"
+                    }
+                  : null
+              }
+            });
             // Run all GraphQL queries
             await getDataFromTree(
               <App
@@ -115,18 +130,6 @@ export default (App: any) => {
                 apolloClient={apollo}
               />
             );
-            apollo.writeQuery({
-              query: FETCH_CURRENT_USER,
-              data: {
-                current_user: user
-                  ? {
-                      ...user,
-                      id: user.uid,
-                      __typename: "User"
-                    }
-                  : null
-              }
-            });
           } catch (error) {
             // Prevent Apollo Client GraphQL errors from crashing SSR.
             // Handle them in components via the data.error prop:
@@ -155,7 +158,9 @@ export default (App: any) => {
 
     constructor(props: ApolloProps) {
       super(props);
-      const currentUser = props.apolloState.ROOT_QUERY.current_user;
+      const currentUser =
+        props.apolloState.ROOT_QUERY &&
+        props.apolloState.ROOT_QUERY.current_user;
       let currentUserUID = "";
       if (currentUser) {
         currentUserUID = (currentUser as { id: string }).id.split(":")[1];

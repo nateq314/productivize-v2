@@ -17,8 +17,10 @@ export const LOGIN = `
     login(idToken: $idToken, session: $session) {
       error
       user {
-        uid
+        id
         email
+        first_name
+        last_name
       }
     }
   }

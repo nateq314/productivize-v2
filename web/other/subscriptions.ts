@@ -25,6 +25,16 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
         id
         name
         order
+        members {
+          is_admin
+          pending_acceptance
+          user {
+            id
+            email
+            first_name
+            last_name
+          }
+        }
         todos {
           id
         }
@@ -36,6 +46,16 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
         id
         name
         order
+        members {
+          is_admin
+          pending_acceptance
+          user {
+            id
+            email
+            first_name
+            last_name
+          }
+        }
       }
       todoCreated {
         id

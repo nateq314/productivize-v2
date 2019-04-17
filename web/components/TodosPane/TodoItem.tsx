@@ -44,7 +44,6 @@ interface TodoItemProps {
   isDragging: boolean;
   isEditing: boolean;
   isSelected: boolean;
-  selectedList: TodoList;
   setCurrEditing: React.Dispatch<React.SetStateAction<string | null>>;
   setDragState: React.Dispatch<React.SetStateAction<DragState>>;
   setSelectedTodoId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -56,7 +55,6 @@ export default function TodoItem({
   isDragging,
   isEditing,
   isSelected,
-  selectedList,
   setDragState,
   setCurrEditing,
   setSelectedTodoId,
@@ -98,7 +96,7 @@ export default function TodoItem({
             isEditing={isEditing}
             todo={todo}
           />
-          <DeleteTodo selectedList={selectedList} todo={todo}>
+          <DeleteTodo todo={todo}>
             {(deleteTodo) => <span onClick={deleteTodo}> Delete</span>}
           </DeleteTodo>
           <a

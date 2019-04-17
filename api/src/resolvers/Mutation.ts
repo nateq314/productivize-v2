@@ -3,12 +3,18 @@ import { ForbiddenError } from "apollo-server-express";
 import * as express from "express";
 import { Context } from "../apolloServer";
 import {
-  getUserRecord,
   verifyIdToken,
   createUserSessionToken,
   verifyUserSessionToken
 } from "../firebase";
-import { ListGQL, ListDB, TodoDB, TodoGQL } from "../schema";
+import {
+  ListDB,
+  ListGQL,
+  TodoDB,
+  TodoGQL,
+  UserGQL,
+  ListMemberInfoGQL
+} from "../schema";
 import { pubsub, LIST_EVENTS } from "./Subscription";
 
 interface ILogin {
@@ -49,22 +55,47 @@ export default {
       const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
       // ====== BEGIN TRANSACTION =============================================
       const listCreated = await firestore.runTransaction(async (tx) => {
+        const userDocSnapshot = await tx.get(
+          firestore.collection("users").doc(current_uid)
+        );
+        const user = userDocSnapshot.data() as Partial<UserGQL>;
+        user.id = userDocSnapshot.id;
         const currUserLists = await tx.get(
-          listsCollRef.where("owners", "array-contains", current_uid)
+          listsCollRef.where("members", "array-contains", current_uid)
         );
         const newListDocRef = listsCollRef.doc();
         const newListData: ListDB = {
           name: args.name,
           order: currUserLists.size + 1,
-          owners: [current_uid]
+          members: [current_uid],
+          member_info: {
+            [current_uid]: {
+              is_admin: true,
+              pending_acceptance: false
+            }
+          }
         };
         tx.create(newListDocRef, newListData);
-        (newListData as ListGQL).id = newListDocRef.id;
-        (newListData as ListGQL).todos = [];
-        return newListData as ListGQL;
+        return {
+          id: newListDocRef.id,
+          members: [
+            {
+              is_admin: true,
+              pending_acceptance: false,
+              user
+            }
+          ],
+          name: newListData.name,
+          order: newListData.order,
+          todos: []
+        } as ListGQL;
       });
       // ====== END TRANSACTION ===============================================
-      pubsub.publish(LIST_EVENTS, { listCreated, owners: listCreated.owners });
+      pubsub.publish(LIST_EVENTS, {
+        listCreated,
+        members: [current_uid]
+      });
+      console.log("listCreated:", listCreated);
       return listCreated;
     } catch (error) {
       console.error(error);
@@ -80,15 +111,30 @@ export default {
     try {
       const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
       const todoListDocRef = listsCollRef.doc(args.id);
+      let members: string[] = [];
       // ====== BEGIN TRANSACTION =============================================
       const listDeleted = await firestore.runTransaction(async (tx) => {
         const deletedListData = (await tx.get(todoListDocRef)).data() as ListDB;
-        if (!deletedListData.owners.includes(current_uid)) {
+        members = deletedListData.members;
+        if (!members.includes(current_uid)) {
           // TODO: test this
           throw new ForbiddenError(
             "You are not authorized to touch this list."
           );
         }
+        const membersGQL = await Promise.all(
+          deletedListData.members.map(async (member_uid) => {
+            const userDocSnapshot = await tx.get(
+              firestore.collection("users").doc(member_uid)
+            );
+            const user = userDocSnapshot.data() as UserGQL;
+            user.id = userDocSnapshot.id;
+            return {
+              ...deletedListData.member_info[member_uid],
+              user
+            };
+          })
+        );
         const higherOrderLists = await tx.get(
           listsCollRef.where("order", ">", deletedListData.order)
         );
@@ -103,11 +149,18 @@ export default {
           const order = (list.data() as ListDB).order;
           tx.update(list.ref, { order: order - 1 });
         });
-        (deletedListData as ListGQL).id = todoListDocRef.id;
-        return deletedListData as ListGQL;
+        return {
+          ...deletedListData,
+          id: todoListDocRef.id,
+          members: membersGQL
+        } as Partial<ListGQL>;
       });
       // ====== END TRANSACTION ===============================================
-      pubsub.publish(LIST_EVENTS, { listDeleted, owners: listDeleted.owners });
+      console.log("listDeleted:", listDeleted);
+      pubsub.publish(LIST_EVENTS, {
+        listDeleted,
+        members
+      });
       return { success: true };
     } catch (error) {
       console.error(error);
@@ -120,22 +173,34 @@ export default {
    *********************/
   async updateList(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
-    let owners: string[] = [];
+    let members: string[] = [];
     let metadata = null;
     try {
       // ====== BEGIN TRANSACTION =============================================
       const listUpdated = await firestore.runTransaction(async (tx) => {
         const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
         const todoListDocRef = listsCollRef.doc(args.id);
-        const todoListDocSnapshot = await tx.get(todoListDocRef);
-        owners = (todoListDocSnapshot.data() as ListDB).owners;
-        if (!owners.includes(current_uid)) {
+        const todoListData = (await tx.get(todoListDocRef)).data() as ListDB;
+        members = todoListData.members;
+        if (!members.includes(current_uid)) {
           // TODO: test this
           throw new ForbiddenError(
             "Not authorized to touch anything in this list."
           );
         }
-        const todoListData = (await tx.get(todoListDocRef)).data() as ListDB;
+        const membersGQL: ListMemberInfoGQL[] = await Promise.all(
+          members.map(async (uid) => {
+            const userDocSnapshot = await tx.get(
+              firestore.collection("users").doc(uid)
+            );
+            const user = userDocSnapshot.data() as UserGQL;
+            user.id = userDocSnapshot.id;
+            return {
+              ...todoListData.member_info[uid],
+              user
+            };
+          })
+        );
         const todosQuerySnapshot = await tx.get(
           todoListDocRef.collection("todos")
         );
@@ -148,7 +213,6 @@ export default {
         const updates: any = {};
         if (name) updates.name = name;
         if (order) {
-          // TODO: implement this on FE and test it
           updates.order = order;
           let listsQuerySnapshot: FirebaseFirestore.QuerySnapshot;
           let adjustment: -1 | 1;
@@ -177,6 +241,7 @@ export default {
         return {
           ...todoListData,
           ...updates,
+          members: membersGQL,
           todos,
           id: args.id
         };
@@ -185,8 +250,9 @@ export default {
       pubsub.publish(LIST_EVENTS, {
         listUpdated,
         metadata,
-        owners
+        members
       });
+      console.log("listUpdated:", listUpdated);
       return listUpdated;
     } catch (error) {
       console.error(error);
@@ -200,13 +266,13 @@ export default {
   async createTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
     try {
-      let owners: string[] = [];
+      let members: string[] = [];
       // ====== BEGIN TRANSACTION =============================================
       const todoCreated = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
         const todosCollRef = todoListDocRef.collection("todos");
         const todoListDocSnapshot = await tx.get(todoListDocRef);
-        owners = (todoListDocSnapshot.data() as ListDB).owners;
+        members = (todoListDocSnapshot.data() as ListDB).members;
         const currTodosSnapshot = await tx.get(todosCollRef);
         const newTodoDocRef = todosCollRef.doc();
         const added_on = new Date();
@@ -234,7 +300,7 @@ export default {
           ...todoCreated,
           added_on: todoCreated.added_on.toISOString()
         },
-        owners
+        members
       });
       return todoCreated;
     } catch (error) {
@@ -248,14 +314,14 @@ export default {
    *********************/
   async deleteTodo(parent: any, args: any, ctx: Context, info: any) {
     authorize(ctx);
-    let owners: string[] = [];
+    let members: string[] = [];
     try {
       // ====== BEGIN TRANSACTION =============================================
       const todoDeleted = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
         const todoListDocSnapshot = await tx.get(todoListDocRef);
-        owners = (todoListDocSnapshot.data() as ListDB).owners;
-        if (!owners.includes((ctx.user as fbAdmin.auth.DecodedIdToken).uid)) {
+        members = (todoListDocSnapshot.data() as ListDB).members;
+        if (!members.includes((ctx.user as fbAdmin.auth.DecodedIdToken).uid)) {
           // TODO: test this
           throw new ForbiddenError(
             "Not authorized to touch anything in this list."
@@ -285,7 +351,7 @@ export default {
 
       pubsub.publish(LIST_EVENTS, {
         todoDeleted: convertDateFieldsForPublishing(todoDeleted),
-        owners
+        members
       });
       return { success: true };
     } catch (error) {
@@ -302,23 +368,24 @@ export default {
     // set() method handles both creation and updating.
     authorize(ctx);
     try {
-      let owners: string[] = [];
-      let destListOwners: string[] = [];
+      let members: string[] = [];
+      let destListMembers: string[] = [];
       let metadata: { [key: string]: any } | null = null;
       // ====== BEGIN TRANSACTION =============================================
       const todoUpdated = await firestore.runTransaction(async (tx) => {
         const sourceTodoListDocRef = listsCollRef.doc(args.listId);
         let destTodoListDocRef: FirebaseFirestore.DocumentReference = sourceTodoListDocRef;
         const sourceTodoListDocSnapshot = await tx.get(sourceTodoListDocRef);
-        owners = (sourceTodoListDocSnapshot.data() as ListDB).owners;
-        destListOwners = [...owners];
+        members = (sourceTodoListDocSnapshot.data() as ListDB).members;
+        destListMembers = [...members];
         if (args.destListId) {
           destTodoListDocRef = listsCollRef.doc(args.destListId);
-          destListOwners = ((await tx.get(destTodoListDocRef)).data() as ListDB)
-            .owners;
+          destListMembers = ((await tx.get(
+            destTodoListDocRef
+          )).data() as ListDB).members;
         }
         const ctxUid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
-        if (!(owners.includes(ctxUid) && destListOwners.includes(ctxUid))) {
+        if (!(members.includes(ctxUid) && destListMembers.includes(ctxUid))) {
           // TODO: test this
           throw new ForbiddenError("Not authorized to touch this data.");
         }
@@ -411,7 +478,7 @@ export default {
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
         metadata,
-        owners: destListOwners
+        members: destListMembers
       });
       return todoUpdated;
     } catch (error) {
@@ -421,49 +488,63 @@ export default {
   },
 
   async login(parent: any, args: ILogin, ctx: Context, info: any) {
-    if (args.idToken && args.idToken !== "undefined") {
-      // User just logged in via email/password and either
-      // 1: client is calling this in order to set a session cookie, API <-> CLIENT, or
-      // 2: SSR backend is calling this in order to fetch the user object
-      //    and set the session cookie, SSR <-> CLIENT
-      const decodedIdToken = await verifyIdToken(args.idToken);
-      const { uid } = decodedIdToken;
-      if (!uid) {
-        console.error("User is not registered");
-        return {
-          error: "User is not registered"
-        };
-      }
-
-      const user = await getUserRecord(uid);
-      const [sessionCookie, expiresIn] = await createUserSessionToken(
-        args,
-        decodedIdToken
-      );
-      const options: express.CookieOptions = {
-        maxAge: expiresIn,
-        httpOnly: true,
-        secure: false // TODO: set secure: true in production
-      };
-      ctx.res.cookie("session", sessionCookie, options);
-      return { user };
-    } else {
-      // User is re-visiting the site and automatically reauthenticating using the
-      // existing session cookie (SSR <-> CLIENT).
-      const sessionCookie = args.session || "";
-      if (sessionCookie) {
-        try {
-          const decodedClaims = await verifyUserSessionToken(sessionCookie);
-          const user = await getUserRecord(decodedClaims.uid);
-          return { user };
-        } catch (error) {
-          // verifyUserSessionToken() will throw if the session cookie
-          // is invalid or revoked.
+    try {
+      if (args.idToken && args.idToken !== "undefined") {
+        // User just logged in via email/password and either
+        // 1: client is calling this in order to set a session cookie, API <-> CLIENT, or
+        // 2: SSR backend is calling this in order to fetch the user object
+        //    and set the session cookie, SSR <-> CLIENT
+        const decodedIdToken = await verifyIdToken(args.idToken);
+        const { uid } = decodedIdToken;
+        if (!uid) {
+          console.error("User is not registered");
           return {
-            error: `Invalid login request: ${error}`
+            error: "User is not registered"
           };
         }
+        const userDocSnapshot = await firestore
+          .collection("users")
+          .doc(uid)
+          .get();
+        const user = userDocSnapshot.data() as Partial<UserGQL>;
+        user.id = userDocSnapshot.id;
+        const [sessionCookie, expiresIn] = await createUserSessionToken(
+          args,
+          decodedIdToken
+        );
+        const options: express.CookieOptions = {
+          maxAge: expiresIn,
+          httpOnly: true,
+          secure: false // TODO: set secure: true in production
+        };
+        ctx.res.cookie("session", sessionCookie, options);
+        return { user };
+      } else {
+        // User is re-visiting the site and automatically reauthenticating using the
+        // existing session cookie (SSR <-> CLIENT).
+        const sessionCookie = args.session || "";
+        if (sessionCookie) {
+          try {
+            const decodedClaims = await verifyUserSessionToken(sessionCookie);
+            const userDocSnapshot = await firestore
+              .collection("users")
+              .doc(decodedClaims.uid)
+              .get();
+            const user = userDocSnapshot.data() as Partial<UserGQL>;
+            user.id = userDocSnapshot.id;
+            return { user };
+          } catch (error) {
+            // verifyUserSessionToken() will throw if the session cookie
+            // is invalid or revoked.
+            console.error(error);
+            return {
+              error: `Invalid login request: ${error}`
+            };
+          }
+        }
       }
+    } catch (error) {
+      console.error(error);
     }
     return {
       error: "Invalid login request"

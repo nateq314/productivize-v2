@@ -8,7 +8,9 @@ import withApolloClient from "../other/with-apollo-client";
 
 export interface StoredUserData {
   email: string;
-  uid: string;
+  first_name: string;
+  last_name: string;
+  id: string;
   // actually a lot more than this but for now this is all we want to deal with
 }
 

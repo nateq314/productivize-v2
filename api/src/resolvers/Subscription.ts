@@ -26,7 +26,7 @@ export const pubsub = new GooglePubSub(
 export const LIST_EVENTS = "list_events";
 
 interface UnpublishablePayload {
-  owners: string[];
+  members: string[];
 }
 
 function resolve(payload: any) {
@@ -43,8 +43,8 @@ export default Object.entries({
         context: any,
         info: any
       ) => {
-        const { owners } = payload;
-        return owners.includes(context.connection.context.currentUserUID);
+        const { members } = payload;
+        return members.includes(context.connection.context.currentUserUID);
       }
     )
   }

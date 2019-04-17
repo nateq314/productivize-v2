@@ -14,6 +14,16 @@ export const CREATE_LIST = gql`
       id
       name
       order
+      members {
+        is_admin
+        pending_acceptance
+        user {
+          id
+          email
+          first_name
+          last_name
+        }
+      }
       todos {
         id
       }
@@ -36,6 +46,16 @@ export const UPDATE_LIST = gql`
       id
       name
       order
+      members {
+        is_admin
+        pending_acceptance
+        user {
+          id
+          email
+          first_name
+          last_name
+        }
+      }
       todos {
         id
         list_id
@@ -87,7 +107,6 @@ export const DELETE_TODO = gql`
   mutation DeleteTodo($listId: String!, $todoId: String!) {
     deleteTodo(listId: $listId, todoId: $todoId) {
       success
-      message
     }
   }
 `;

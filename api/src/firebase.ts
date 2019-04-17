@@ -62,15 +62,6 @@ async function verifyUserSessionToken(token: string) {
   }
 }
 
-// Sets properties into firebase user
-function setUserClaims(uid: string, data: any) {
-  return admin.auth().setCustomUserClaims(uid, data);
-}
-
-function getUserRecord(uid: string) {
-  return admin.auth().getUser(uid);
-}
-
 async function verifyIdToken(idToken: string) {
   try {
     const decodedIdToken = await admin.auth().verifyIdToken(idToken, true);
@@ -83,10 +74,4 @@ async function verifyIdToken(idToken: string) {
   }
 }
 
-export {
-  createUserSessionToken,
-  getUserRecord,
-  setUserClaims,
-  verifyIdToken,
-  verifyUserSessionToken
-};
+export { createUserSessionToken, verifyIdToken, verifyUserSessionToken };

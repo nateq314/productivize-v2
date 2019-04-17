@@ -50,7 +50,6 @@ export default function Todos({
                 isDragging={dragState.draggableID === todo.id}
                 isEditing={isEditing}
                 isSelected={isSelected}
-                selectedList={selectedList}
                 setCurrEditing={setCurrEditing}
                 setDragState={setDragState}
                 setSelectedTodoId={setSelectedTodoId}

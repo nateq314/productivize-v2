@@ -87,7 +87,7 @@ export default function ListItem({
           }
         >
           <span>{list.name}</span>
-          <DeleteList listId={list.id}>
+          <DeleteList list={list}>
             {(deleteList) => (
               <span
                 onClick={(e) => {

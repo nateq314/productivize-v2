@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Mutation } from "react-apollo";
 import Modal from "./Modal";
 import { FETCH_LISTS } from "../other/queries";
 import { CREATE_LIST } from "../other/mutations";
 import { TodoListsQueryResult, TodoList } from "./Main";
+import { UserContext, StoredUserData } from "../pages/_app";
 
 interface CreateNewListModalProps {
   lists: TodoList[];
@@ -16,6 +17,9 @@ export default function CreateNewListModal({
 }: CreateNewListModalProps) {
   const [newListName, setNewListName] = useState("");
   const newListNameInput = useRef<HTMLInputElement>(null);
+  // okay to cast since this component could never get rendered
+  // without user being logged in in the first place
+  const user = useContext(UserContext) as StoredUserData;
 
   useEffect(() => {
     (newListNameInput.current as HTMLInputElement).focus();
@@ -60,6 +64,14 @@ export default function CreateNewListModal({
                       id: "temp",
                       name: newListName,
                       order: lists.length + 1,
+                      members: [
+                        {
+                          __typename: "ListMember",
+                          is_admin: true,
+                          pending_acceptance: false,
+                          user
+                        }
+                      ],
                       todos: []
                     }
                   }

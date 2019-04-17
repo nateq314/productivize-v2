@@ -4,30 +4,9 @@ export const FETCH_CURRENT_USER = gql`
   query {
     current_user {
       id
-      uid
       email
-    }
-  }
-`;
-
-export const FETCH_LIST = gql`
-  query FetchList($id: String!) {
-    fetchList(id: $id) {
-      id
-      name
-      order
-      todos {
-        id
-        added_on
-        content
-        completed
-        completed_on
-        deadline
-        description
-        important
-        order
-        remind_on
-      }
+      first_name
+      last_name
     }
   }
 `;
@@ -38,6 +17,16 @@ export const FETCH_LISTS = gql`
       id
       name
       order
+      members {
+        is_admin
+        pending_acceptance
+        user {
+          id
+          email
+          first_name
+          last_name
+        }
+      }
       todos {
         id
         list_id

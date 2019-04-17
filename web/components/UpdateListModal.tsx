@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Mutation } from "react-apollo";
 import Modal from "./Modal";
-import { FETCH_LISTS } from "../other/queries";
-import { UPDATE_LIST } from "../other/mutations";
-import { TodoList, TodoListsQueryResult } from "./Main";
+import { TodoList } from "./Main";
+import UpdateList from "./UpdateList";
 
 interface UpdateListModalProps {
   list: TodoList;
@@ -22,35 +21,7 @@ export default function UpdateListModal({
   }, []);
 
   return (
-    <Mutation
-      ignoreResults
-      mutation={UPDATE_LIST}
-      update={(cache, { data: { updateList } }) => {
-        const listsData: TodoListsQueryResult | null = cache.readQuery({
-          query: FETCH_LISTS
-        });
-        if (listsData) {
-          const { lists } = listsData;
-          const index = listsData.lists.findIndex((l) => l.id === list.id);
-          if (index >= 0) {
-            const newLists = [
-              ...lists.slice(0, index),
-              {
-                ...updateList,
-                todos: list.todos
-              },
-              ...lists.slice(index + 1)
-            ];
-            cache.writeQuery({
-              query: FETCH_LISTS,
-              data: {
-                lists: newLists
-              }
-            });
-          }
-        }
-      }}
-    >
+    <UpdateList list={list}>
       {(updateList) => {
         return (
           <Modal closeModal={closeModal}>
@@ -58,22 +29,11 @@ export default function UpdateListModal({
             <form
               onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                updateList({
-                  variables: {
-                    id: list.id,
-                    name: newListName
-                  },
-                  optimisticResponse: {
-                    __typename: "Mutation",
-                    updateList: {
-                      ...list,
-                      name: newListName
-                    }
-                  }
-                }).catch((error) => console.error(error));
+                updateList({ name: newListName });
                 closeModal();
               }}
             >
+              <h5>Name:</h5>
               <input
                 ref={newListNameInput}
                 value={newListName}
@@ -81,10 +41,14 @@ export default function UpdateListModal({
                   setNewListName(e.target.value)
                 }
               />
+              <h5>Owners</h5>
+              {list.members.map(member => (
+                <div key={member.user.id}>{member.user.id}</div>
+              ))}
             </form>
           </Modal>
         );
       }}
-    </Mutation>
+    </UpdateList>
   );
 }

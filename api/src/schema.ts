@@ -1,14 +1,29 @@
 import { gql } from "apollo-server-express";
 import { firestore } from "firebase-admin";
 
+export interface ListMemberInfoDB {
+  is_admin: boolean;
+  pending_acceptance: boolean;
+}
+
+export interface ListMemberInfoGQL extends ListMemberInfoDB {
+  user: UserGQL;
+}
+
 export interface ListDB {
   name: string;
   order: number;
-  owners: string[];
+  members: string[];
+  member_info: {
+    [key: string]: ListMemberInfoDB;
+  };
 }
 
-export interface ListGQL extends ListDB {
+export interface ListGQL {
   id: string;
+  members: ListMemberInfoGQL[];
+  name: string;
+  order: number;
   todos: TodoGQL[];
 }
 
@@ -38,6 +53,20 @@ export interface TodoGQL {
   remind_on?: string;
 }
 
+export interface UserDB {
+  email: string;
+  first_name: string;
+  displayName?: string;
+  last_name: string;
+  phoneNumber?: string;
+  photoURL?: string;
+  disabled: boolean;
+}
+
+export interface UserGQL extends UserDB {
+  id: string;
+}
+
 const schema = gql`
   scalar DateTime
   scalar JSON
@@ -47,7 +76,13 @@ const schema = gql`
     name: String!
     order: Int!
     todos: [Todo!]!
-    owners: [String!]!
+    members: [ListMember!]!
+  }
+
+  type ListMember {
+    is_admin: Boolean!
+    pending_acceptance: Boolean!
+    user: User!
   }
 
   type ListMutationEvent {
@@ -124,16 +159,25 @@ const schema = gql`
 
   type User {
     id: ID!
-    uid: String!
-    email: String!
-    emailVerified: Boolean!
+    disabled: Boolean!
     displayName: String
+    email: String!
+    first_name: String!
+    last_name: String!
     phoneNumber: String
     photoURL: String
+  }
+
+  # This is not used currently. We only pull from firestore 'users' collection,
+  # in order to present consistent user data to the frontend.
+  type FBAuthUserRecord {
+    id: ID!
+    uid: String!
     disabled: Boolean!
-    passwordHash: String
-    passwordSalt: String
-    tokensValidAfterTime: String
+    displayName: String
+    email: String!
+    phoneNumber: String
+    photoURL: String
   }
 `;
 
