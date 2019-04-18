@@ -3,7 +3,7 @@ import { Mutation } from "react-apollo";
 import { FETCH_LISTS } from "../other/queries";
 import { CREATE_LIST } from "../other/mutations";
 import { TodoListsQueryResult } from "./Main";
-import { UserContext, StoredUserData } from "../pages/_app";
+import { UserContext, User } from "../pages/_app";
 
 interface CreateListVariables {
   name: string;
@@ -18,7 +18,7 @@ interface CreateListProps {
 export default function CreateList({ children }: CreateListProps) {
   // okay to cast since this component could never get rendered
   // without user being logged in in the first place
-  const user = useContext(UserContext) as StoredUserData;
+  const user = useContext(UserContext) as User;
 
   return (
     <Mutation

@@ -6,7 +6,7 @@ import GlobalStyles from "../components/GlobalStyles";
 import { FETCH_CURRENT_USER } from "../other/queries";
 import withApolloClient from "../other/with-apollo-client";
 
-export interface StoredUserData {
+export interface User {
   email: string;
   first_name: string;
   last_name: string;
@@ -24,7 +24,7 @@ interface MyAppProps extends AppProps {
  * EVERY component that needs access to it. So we only do that once here, near
  * the top, then put the user object in React Context for ease of access.
  */
-export const UserContext = React.createContext<StoredUserData | null>(null);
+export const UserContext = React.createContext<User | null>(null);
 
 class MyApp extends App<MyAppProps> {
   public render() {

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Draggable } from "react-beautiful-dnd";
 import styled from "styled-components";
-import { TodoList } from "../Main";
+import { TodoList, ListMember } from "../Main";
 import DeleteList from "../DeleteList";
+import { UserContext, User } from "../../pages/_app";
 
 const StyledListItem = styled.li`
   padding: 20px 0px;
@@ -54,6 +55,7 @@ export default function ListItem({
   toggleListSelectedStatus,
   openUpdateListModal
 }: ListItemProps) {
+  const user = useContext(UserContext) as User;
   let mouseXY = { x: 0, y: 0 };
   return (
     <Draggable draggableId={list.id} index={index}>
@@ -87,19 +89,22 @@ export default function ListItem({
           }
         >
           <span>{list.name}</span>
-          <DeleteList list={list}>
-            {(deleteList) => (
-              <span
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteList();
-                }}
-              >
-                {" "}
-                Delete
-              </span>
-            )}
-          </DeleteList>
+          {(list.members.find((m) => m.user.id === user.id) as ListMember)
+            .is_admin && (
+            <DeleteList list={list}>
+              {(deleteList) => (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteList();
+                  }}
+                >
+                  {" "}
+                  Delete
+                </span>
+              )}
+            </DeleteList>
+          )}
           <span
             onClick={(e) => {
               e.stopPropagation();

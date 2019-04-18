@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
 import { TodoList, ListMember } from "./Main";
 import { ListVariables } from "./UpdateList";
-import { UserContext } from "../pages/_app";
+import { UserContext, User } from "../pages/_app";
 
 interface ListModalProps {
   list?: TodoList; // present for UPDATE modal, not present for CREATE modal
@@ -15,7 +15,7 @@ export default function ListModal({
   list,
   closeModal
 }: ListModalProps) {
-  const user = useContext(UserContext);
+  const user = useContext(UserContext) as User;
   const [newListName, setNewListName] = useState(list ? list.name : "");
   const [members, setMembers] = useState<ListMember[]>(
     list
@@ -54,7 +54,10 @@ export default function ListModal({
         />
         <h5>Owners</h5>
         {members.map((member) => (
-          <div key={member.user.id}>{member.user.id}</div>
+          <div key={member.user.id}>
+            {member.user.first_name} {member.user.last_name}
+            {member.is_admin ? " (owner)" : ""}
+          </div>
         ))}
       </form>
     </Modal>

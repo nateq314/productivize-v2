@@ -10,6 +10,7 @@ import {
   ListEventsSubscriptionData
 } from "../other/subscriptions";
 import UpdateListModal from "./UpdateListModalContainer";
+import { User } from "../pages/_app";
 
 const StyledMain = styled.div`
   height: 100vh;
@@ -25,7 +26,7 @@ export interface TodoListsQueryResult {
 export interface ListMember {
   is_admin: boolean;
   pending_acceptance: boolean;
-  user: any; // TODO: type this
+  user: User;
 }
 
 export interface TodoList {

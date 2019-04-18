@@ -10,7 +10,7 @@ import * as api from "./api";
 import { LOGIN } from "../components/Login";
 import * as http from "http";
 import { FETCH_CURRENT_USER } from "./queries";
-import { StoredUserData } from "../pages/_app";
+import { User } from "../pages/_app";
 
 interface ApolloProps {
   apolloState: NormalizedCacheObject;
@@ -88,7 +88,7 @@ export default (App: any) => {
       // Run all GraphQL queries in the component tree
       // and extract the resulting data
       let apollo: ApolloClient<NormalizedCacheObject> | undefined;
-      let user: StoredUserData | undefined;
+      let user: User | undefined;
       if (typeof window === "undefined") {
         // SERVER SIDE
         if (ctx.query.logout === "true") {
