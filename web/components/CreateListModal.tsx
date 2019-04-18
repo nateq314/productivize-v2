@@ -1,18 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
-import { TodoList } from "./Main";
-import UpdateList from "./UpdateList";
+import CreateList from "./CreateList";
 
-interface UpdateListModalProps {
-  list: TodoList;
+interface CreateListModalProps {
   closeModal: () => void;
 }
 
-export default function UpdateListModal({
-  list,
-  closeModal
-}: UpdateListModalProps) {
-  const [newListName, setNewListName] = useState(list.name);
+export default function CreateListModal({ closeModal }: CreateListModalProps) {
+  const [newListName, setNewListName] = useState("");
   const newListNameInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -20,19 +15,19 @@ export default function UpdateListModal({
   }, []);
 
   return (
-    <UpdateList list={list}>
-      {(updateList) => {
+    <CreateList>
+      {(createList) => {
         return (
           <Modal closeModal={closeModal}>
             <div onClick={closeModal}>Close the modal</div>
             <form
               onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
-                updateList({ name: newListName });
+                createList({ name: newListName });
+                setNewListName("");
                 closeModal();
               }}
             >
-              <h5>Name:</h5>
               <input
                 ref={newListNameInput}
                 value={newListName}
@@ -40,14 +35,10 @@ export default function UpdateListModal({
                   setNewListName(e.target.value)
                 }
               />
-              <h5>Owners</h5>
-              {list.members.map((member) => (
-                <div key={member.user.id}>{member.user.id}</div>
-              ))}
             </form>
           </Modal>
         );
       }}
-    </UpdateList>
+    </CreateList>
   );
 }

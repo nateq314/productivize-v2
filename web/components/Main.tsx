@@ -3,7 +3,7 @@ import { Query } from "react-apollo";
 import styled from "styled-components";
 import AppBar from "./AppBar";
 import AppContent from "./AppContent";
-import CreateNewListModal from "./CreateNewListModal";
+import CreateNewListModal from "./CreateListModal";
 import { FETCH_LISTS } from "../other/queries";
 import {
   LIST_EVENTS_SUBSCRIPTION,
@@ -99,7 +99,6 @@ export default function Main() {
             {newListModalIsVisible && (
               <CreateNewListModal
                 closeModal={() => setNewListModalVisibility(false)}
-                lists={lists}
               />
             )}
             {updateListModalState.list && updateListModalState.visible && (
