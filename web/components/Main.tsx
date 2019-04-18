@@ -3,13 +3,13 @@ import { Query } from "react-apollo";
 import styled from "styled-components";
 import AppBar from "./AppBar";
 import AppContent from "./AppContent";
-import CreateNewListModal from "./CreateListModal";
+import CreateNewListModal from "./CreateListModalContainer";
 import { FETCH_LISTS } from "../other/queries";
 import {
   LIST_EVENTS_SUBSCRIPTION,
   ListEventsSubscriptionData
 } from "../other/subscriptions";
-import UpdateListModal from "./UpdateListModal";
+import UpdateListModal from "./UpdateListModalContainer";
 
 const StyledMain = styled.div`
   height: 100vh;
@@ -22,7 +22,7 @@ export interface TodoListsQueryResult {
   lists: TodoList[];
 }
 
-interface ListMember {
+export interface ListMember {
   is_admin: boolean;
   pending_acceptance: boolean;
   user: any; // TODO: type this

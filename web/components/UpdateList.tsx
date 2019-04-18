@@ -4,12 +4,14 @@ import { FETCH_LISTS } from "../other/queries";
 import { UPDATE_LIST } from "../other/mutations";
 import { TodoList, TodoListsQueryResult } from "./Main";
 
-interface UpdateListVariables {
+export interface ListVariables {
   name: string;
 }
 
 interface UpdateListProps {
-  children: (updateListFn: (variables: UpdateListVariables) => void) => React.ReactNode;
+  children: (
+    updateListFn: (variables: ListVariables) => void
+  ) => React.ReactNode;
   list: TodoList;
 }
 
@@ -44,12 +46,12 @@ export default function UpdateList({ children, list }: UpdateListProps) {
         }
       }}
     >
-      {(updateList) => children(
-        (variables: UpdateListVariables) => {
+      {(updateList) =>
+        children((variables: ListVariables) => {
           updateList({
             variables: {
               ...variables,
-              id: list.id,
+              id: list.id
             },
             optimisticResponse: {
               __typename: "Mutation",
@@ -59,8 +61,8 @@ export default function UpdateList({ children, list }: UpdateListProps) {
               }
             }
           }).catch((error) => console.error(error));
-        }
-      )}
+        })
+      }
     </Mutation>
   );
 }
