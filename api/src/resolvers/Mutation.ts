@@ -553,19 +553,7 @@ export default {
 
   async logout(parent: any, args: any, ctx: Context, info: any) {
     const sessionCookie = ctx.req.cookies.session || "";
-    if (sessionCookie) {
-      ctx.res.clearCookie("session");
-      // if (ctx.user) {
-      //   try {
-      //     await fbAdmin.auth().revokeRefreshTokens(ctx.user.sub);
-      //     return {};
-      //   } catch (error) {
-      //     return {
-      //       error
-      //     };
-      //   }
-      // }
-    }
+    if (sessionCookie) ctx.res.clearCookie("session");
     return {
       error: "Session cookie is invalid, or no session to log out of"
     };
