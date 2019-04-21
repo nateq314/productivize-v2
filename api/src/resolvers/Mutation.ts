@@ -1,4 +1,5 @@
 import * as fbAdmin from "firebase-admin";
+import * as fbClient from "firebase";
 import { ForbiddenError } from "apollo-server-express";
 import * as express from "express";
 import { Context } from "../apolloServer";
@@ -557,6 +558,68 @@ export default {
     return {
       error: "Session cookie is invalid, or no session to log out of"
     };
+  },
+
+  async register(parent: any, args: any, ctx: Context, info: any) {
+    try {
+      const { email, password, first_name, last_name } = args;
+      const userRecord = await fbAdmin.auth().createUser({
+        email,
+        password
+      });
+      // let writeResult: FirebaseFirestore.WriteResult;
+      /* writeResult = */ await firestore
+        .collection("users")
+        .doc(userRecord.uid)
+        .create({
+          email,
+          first_name,
+          last_name
+        });
+      /* writeResult = */ await firestore
+        .collection("lists")
+        .doc()
+        .create({
+          name: "MAIN",
+          order: 1,
+          members: [userRecord.uid],
+          member_info: {
+            [userRecord.uid]: {
+              is_admin: true,
+              pending_acceptance: false
+            }
+          }
+        });
+      const customToken = await fbAdmin
+        .auth()
+        .createCustomToken(userRecord.uid);
+      const app = fbClient.initializeApp({
+        apiKey: "AIzaSyCsMTAxjQ15ylh3ORj8SF_k658fqDO0q3g",
+        authDomain: "focus-champion-231019.firebaseapp.com"
+      });
+      const userCredential = await app
+        .auth()
+        .signInWithCustomToken(customToken);
+      if (userCredential.user) {
+        await userCredential.user.sendEmailVerification({
+          url: "http://localhost:4000/"
+        });
+        await app.auth().signOut();
+        return { success: true };
+      }
+      return {
+        success: false,
+        message:
+          "User object created in database but unable to send " +
+          "user email verification message"
+      };
+    } catch (error) {
+      console.error(error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
   }
 };
 

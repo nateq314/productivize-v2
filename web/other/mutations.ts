@@ -8,6 +8,25 @@ export const LOGOUT = gql`
   }
 `;
 
+export const REGISTER = gql`
+  mutation Register(
+    $email: String!
+    $password: String!
+    $first_name: String!
+    $last_name: String!
+  ) {
+    register(
+      email: $email
+      password: $password
+      first_name: $first_name
+      last_name: $last_name
+    ) {
+      success
+      message
+    }
+  }
+`;
+
 export const CREATE_LIST = gql`
   mutation CreateList($name: String!) {
     createList(name: $name) {

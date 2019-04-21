@@ -127,6 +127,12 @@ const schema = gql`
     ): Todo!
     login(idToken: String, session: String): LoginResult!
     logout: LoginResult!
+    register(
+      email: String!
+      password: String!
+      first_name: String!
+      last_name: String!
+    ): Result!
   }
 
   type Query {
