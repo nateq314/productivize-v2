@@ -34,6 +34,7 @@ export default {
             ...data,
             members: await Promise.all(
               data.members.map(async (member_uid) => {
+                const authUserRecord = await fbAdmin.auth().getUser(member_uid);
                 const userDocSnapshot = await fbAdmin
                   .firestore()
                   .collection("users")
@@ -43,6 +44,7 @@ export default {
                   ...data.member_info[member_uid],
                   user: {
                     ...(userDocSnapshot.data() as UserDB),
+                    ...authUserRecord,
                     id: userDocSnapshot.id
                   }
                 };

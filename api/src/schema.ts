@@ -1,5 +1,5 @@
 import { gql } from "apollo-server-express";
-import { firestore } from "firebase-admin";
+import { auth, firestore } from "firebase-admin";
 
 export interface ListMemberInfoDB {
   is_admin: boolean;
@@ -54,16 +54,13 @@ export interface TodoGQL {
 }
 
 export interface UserDB {
-  email: string;
   first_name: string;
-  displayName?: string;
   last_name: string;
-  phoneNumber?: string;
-  photoURL?: string;
-  disabled: boolean;
 }
 
-export interface UserGQL extends UserDB {
+export interface UserGQL extends auth.UserRecord {
+  first_name: string;
+  last_name: string;
   id: string;
 }
 

@@ -14,7 +14,8 @@ import {
   TodoDB,
   TodoGQL,
   UserGQL,
-  ListMemberInfoGQL
+  ListMemberInfoGQL,
+  UserDB
 } from "../schema";
 import { pubsub, LIST_EVENTS } from "./Subscription";
 
@@ -56,11 +57,16 @@ export default {
       const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
       // ====== BEGIN TRANSACTION =============================================
       const listCreated = await firestore.runTransaction(async (tx) => {
+        const authUserRecord = await fbAdmin.auth().getUser(current_uid);
         const userDocSnapshot = await tx.get(
           firestore.collection("users").doc(current_uid)
         );
-        const user = userDocSnapshot.data() as Partial<UserGQL>;
-        user.id = userDocSnapshot.id;
+        const dbUserRecord = userDocSnapshot.data() as UserDB;
+        const user: UserGQL = {
+          ...authUserRecord,
+          ...dbUserRecord,
+          id: userDocSnapshot.id
+        };
         const currUserLists = await tx.get(
           listsCollRef.where("members", "array-contains", current_uid)
         );
@@ -125,11 +131,16 @@ export default {
         }
         const membersGQL = await Promise.all(
           deletedListData.members.map(async (member_uid) => {
+            const authUserRecord = await fbAdmin.auth().getUser(current_uid);
             const userDocSnapshot = await tx.get(
               firestore.collection("users").doc(member_uid)
             );
-            const user = userDocSnapshot.data() as UserGQL;
-            user.id = userDocSnapshot.id;
+            const dbUserRecord = userDocSnapshot.data() as UserDB;
+            const user: UserGQL = {
+              ...authUserRecord,
+              ...dbUserRecord,
+              id: userDocSnapshot.id
+            };
             return {
               ...deletedListData.member_info[member_uid],
               user
@@ -191,11 +202,16 @@ export default {
         }
         const membersGQL: ListMemberInfoGQL[] = await Promise.all(
           members.map(async (uid) => {
+            const authUserRecord = await fbAdmin.auth().getUser(uid);
             const userDocSnapshot = await tx.get(
               firestore.collection("users").doc(uid)
             );
-            const user = userDocSnapshot.data() as UserGQL;
-            user.id = userDocSnapshot.id;
+            const dbUserRecord = userDocSnapshot.data() as UserDB;
+            const user: UserGQL = {
+              ...authUserRecord,
+              ...dbUserRecord,
+              id: userDocSnapshot.id
+            };
             return {
               ...todoListData.member_info[uid],
               user
@@ -503,12 +519,17 @@ export default {
             error: "User is not registered"
           };
         }
+        const authUserRecord = await fbAdmin.auth().getUser(uid);
         const userDocSnapshot = await firestore
           .collection("users")
           .doc(uid)
           .get();
-        const user = userDocSnapshot.data() as Partial<UserGQL>;
-        user.id = userDocSnapshot.id;
+        const dbUserRecord = userDocSnapshot.data() as UserDB;
+        const user: UserGQL = {
+          ...authUserRecord,
+          ...dbUserRecord,
+          id: uid
+        };
         const [sessionCookie, expiresIn] = await createUserSessionToken(
           args,
           decodedIdToken
@@ -576,20 +597,17 @@ export default {
           first_name,
           last_name
         });
-      /* writeResult = */ await firestore
-        .collection("lists")
-        .doc()
-        .create({
-          name: "MAIN",
-          order: 1,
-          members: [userRecord.uid],
-          member_info: {
-            [userRecord.uid]: {
-              is_admin: true,
-              pending_acceptance: false
-            }
+      /* writeResult = */ await listsCollRef.doc().create({
+        name: "MAIN",
+        order: 1,
+        members: [userRecord.uid],
+        member_info: {
+          [userRecord.uid]: {
+            is_admin: true,
+            pending_acceptance: false
           }
-        });
+        }
+      });
       const customToken = await fbAdmin
         .auth()
         .createCustomToken(userRecord.uid);
