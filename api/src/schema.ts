@@ -4,15 +4,17 @@ import { auth, firestore } from "firebase-admin";
 export interface ListMemberInfoDB {
   is_admin: boolean;
   pending_acceptance: boolean;
+  order: number;
 }
 
-export interface ListMemberInfoGQL extends ListMemberInfoDB {
+export interface ListMemberInfoGQL {
+  is_admin: boolean;
+  pending_acceptance: boolean;
   user: UserGQL;
 }
 
 export interface ListDB {
   name: string;
-  order: number;
   members: string[];
   member_info: {
     [key: string]: ListMemberInfoDB;
@@ -68,6 +70,9 @@ const schema = gql`
   scalar DateTime
   scalar JSON
 
+  # GaphQL schema includes 'order' as a property of lists. Storing the order on
+  # a per-member basis in the DB is an implementation detail. As far as FE is
+  # concerned, it might as well be stored as a property of the list itself.
   type List {
     id: ID!
     name: String!
@@ -100,7 +105,7 @@ const schema = gql`
   type Mutation {
     createList(name: String!): List!
     deleteList(id: ID!): Result!
-    updateList(id: ID!, name: String, order: Int): List!
+    updateList(id: ID!, name: String, order: Int, newMembers: [String!]): List!
     createTodo(
       content: String!
       important: Boolean

@@ -30,8 +30,10 @@ export default {
       const lists = await Promise.all(
         querySnapshot.docs.map(async (doc) => {
           const data = doc.data() as ListDB;
+          const order = data.member_info[uid].order;
           const list = {
             ...data,
+            order,
             members: await Promise.all(
               data.members.map(async (member_uid) => {
                 const authUserRecord = await fbAdmin.auth().getUser(member_uid);

@@ -3,6 +3,7 @@ import Modal from "./Modal";
 import { TodoList, ListMember } from "./Main";
 import { ListVariables } from "./UpdateList";
 import { UserContext, User } from "../pages/_app";
+import Button from "./Button";
 
 interface ListModalProps {
   list?: TodoList; // present for UPDATE modal, not present for CREATE modal
@@ -17,6 +18,7 @@ export default function ListModal({
 }: ListModalProps) {
   const user = useContext(UserContext) as User;
   const [newListName, setNewListName] = useState(list ? list.name : "");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
   const [members, setMembers] = useState<ListMember[]>(
     list
       ? list.members
@@ -40,7 +42,14 @@ export default function ListModal({
       <form
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
-          createOrUpdateList({ name: newListName });
+          // TODO: implement member addition
+          // TODO: implement member deletion
+          const newMembers = members
+            .filter((m) => m.user.id.startsWith("temp-"))
+            .map((m) => m.user.email);
+          const variables: ListVariables = { name: newListName };
+          if (newMembers.length > 0) variables.newMembers = newMembers;
+          createOrUpdateList(variables);
           closeModal();
         }}
       >
@@ -53,12 +62,47 @@ export default function ListModal({
           }
         />
         <h5>Owners</h5>
-        {members.map((member) => (
-          <div key={member.user.id}>
-            {member.user.first_name} {member.user.last_name}
-            {member.is_admin ? " (owner)" : ""}
-          </div>
-        ))}
+        <input
+          placeholder="Email address"
+          value={newMemberEmail}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setNewMemberEmail(e.target.value)
+          }
+          onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === "Enter") e.preventDefault();
+          }}
+          onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === "Enter") {
+              // TODO: input validation
+              if (!members.map((m) => m.user.email).includes(newMemberEmail)) {
+                setMembers(
+                  members.concat({
+                    is_admin: false,
+                    pending_acceptance: true,
+                    user: {
+                      id: `temp-${Date.now()}`,
+                      email: newMemberEmail,
+                      first_name: "",
+                      last_name: ""
+                    }
+                  })
+                );
+                setNewMemberEmail("");
+              }
+            }
+          }}
+        />
+        {members.map((member) => {
+          const isTemp = member.user.id.startsWith("temp-");
+          return (
+            <div key={member.user.id}>
+              {!isTemp && `${member.user.first_name} ${member.user.last_name}`}(
+              {member.user.email}){member.is_admin ? " (owner)" : ""}
+              {member.pending_acceptance ? " (pending)" : ""}
+            </div>
+          );
+        })}
+        <button type="submit">Submit</button>
       </form>
     </Modal>
   );

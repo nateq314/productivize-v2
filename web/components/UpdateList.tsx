@@ -6,6 +6,7 @@ import { TodoList, TodoListsQueryResult } from "./Main";
 
 export interface ListVariables {
   name: string;
+  newMembers?: string[];
 }
 
 interface UpdateListProps {

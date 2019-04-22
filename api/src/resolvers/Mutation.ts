@@ -3,20 +3,8 @@ import * as fbClient from "firebase";
 import { ForbiddenError } from "apollo-server-express";
 import * as express from "express";
 import { Context } from "../apolloServer";
-import {
-  verifyIdToken,
-  createUserSessionToken,
-  verifyUserSessionToken
-} from "../firebase";
-import {
-  ListDB,
-  ListGQL,
-  TodoDB,
-  TodoGQL,
-  UserGQL,
-  ListMemberInfoGQL,
-  UserDB
-} from "../schema";
+import { verifyIdToken, createUserSessionToken, verifyUserSessionToken } from "../firebase";
+import { ListDB, ListGQL, TodoDB, TodoGQL, UserGQL, ListMemberInfoGQL, UserDB } from "../schema";
 import { pubsub, LIST_EVENTS } from "./Subscription";
 
 interface ILogin {
@@ -26,19 +14,12 @@ interface ILogin {
 
 type TodoDateFields = "added_on" | "completed_on" | "deadline" | "remind_on";
 
-function convertDateFieldsForPublishing(
-  todo: TodoDB & { id: string; list_id: string }
-) {
+function convertDateFieldsForPublishing(todo: TodoDB & { id: string; list_id: string }) {
   const converted: any = { ...todo };
-  (["added_on", "completed_on", "deadline", "remind_on"] as Array<
-    TodoDateFields
-  >).forEach((field) => {
+  (["added_on", "completed_on", "deadline", "remind_on"] as Array<TodoDateFields>).forEach((field) => {
     const value = todo[field];
     if (value) {
-      converted[field] =
-        value instanceof Date
-          ? value.toISOString()
-          : value.toDate().toISOString();
+      converted[field] = value instanceof Date ? value.toISOString() : value.toDate().toISOString();
     }
   });
   return converted as TodoGQL;
@@ -58,26 +39,23 @@ export default {
       // ====== BEGIN TRANSACTION =============================================
       const listCreated = await firestore.runTransaction(async (tx) => {
         const authUserRecord = await fbAdmin.auth().getUser(current_uid);
-        const userDocSnapshot = await tx.get(
-          firestore.collection("users").doc(current_uid)
-        );
+        const userDocSnapshot = await tx.get(firestore.collection("users").doc(current_uid));
         const dbUserRecord = userDocSnapshot.data() as UserDB;
         const user: UserGQL = {
           ...authUserRecord,
           ...dbUserRecord,
           id: userDocSnapshot.id
         };
-        const currUserLists = await tx.get(
-          listsCollRef.where("members", "array-contains", current_uid)
-        );
+        const currUserLists = await tx.get(listsCollRef.where("members", "array-contains", current_uid));
         const newListDocRef = listsCollRef.doc();
+        const order = currUserLists.size + 1;
         const newListData: ListDB = {
           name: args.name,
-          order: currUserLists.size + 1,
           members: [current_uid],
           member_info: {
             [current_uid]: {
               is_admin: true,
+              order,
               pending_acceptance: false
             }
           }
@@ -93,7 +71,7 @@ export default {
             }
           ],
           name: newListData.name,
-          order: newListData.order,
+          order,
           todos: []
         } as ListGQL;
       });
@@ -125,16 +103,12 @@ export default {
         members = deletedListData.members;
         if (!members.includes(current_uid)) {
           // TODO: test this
-          throw new ForbiddenError(
-            "You are not authorized to touch this list."
-          );
+          throw new ForbiddenError("You are not authorized to touch this list.");
         }
         const membersGQL = await Promise.all(
           deletedListData.members.map(async (member_uid) => {
             const authUserRecord = await fbAdmin.auth().getUser(current_uid);
-            const userDocSnapshot = await tx.get(
-              firestore.collection("users").doc(member_uid)
-            );
+            const userDocSnapshot = await tx.get(firestore.collection("users").doc(member_uid));
             const dbUserRecord = userDocSnapshot.data() as UserDB;
             const user: UserGQL = {
               ...authUserRecord,
@@ -148,7 +122,7 @@ export default {
           })
         );
         const higherOrderLists = await tx.get(
-          listsCollRef.where("order", ">", deletedListData.order)
+          listsCollRef.where(`member_info.${current_uid}.order`, ">", deletedListData.member_info[current_uid].order)
         );
         // First delete all the todos in the "todos" subcollection, if any.
         const todos = await todoListDocRef.collection("todos").listDocuments();
@@ -158,8 +132,8 @@ export default {
         // Then delete the list itself.
         tx.delete(todoListDocRef);
         higherOrderLists.forEach((list) => {
-          const order = (list.data() as ListDB).order;
-          tx.update(list.ref, { order: order - 1 });
+          const order = (list.data() as ListDB).member_info[current_uid].order;
+          tx.update(list.ref, `member_info.${current_uid}.order`, order - 1);
         });
         return {
           ...deletedListData,
@@ -196,16 +170,13 @@ export default {
         members = todoListData.members;
         if (!members.includes(current_uid)) {
           // TODO: test this
-          throw new ForbiddenError(
-            "Not authorized to touch anything in this list."
-          );
+          throw new ForbiddenError("Not authorized to touch anything in this list.");
         }
+        let order = todoListData.member_info[current_uid].order;
         const membersGQL: ListMemberInfoGQL[] = await Promise.all(
           members.map(async (uid) => {
             const authUserRecord = await fbAdmin.auth().getUser(uid);
-            const userDocSnapshot = await tx.get(
-              firestore.collection("users").doc(uid)
-            );
+            const userDocSnapshot = await tx.get(firestore.collection("users").doc(uid));
             const dbUserRecord = userDocSnapshot.data() as UserDB;
             const user: UserGQL = {
               ...authUserRecord,
@@ -218,41 +189,51 @@ export default {
             };
           })
         );
-        const todosQuerySnapshot = await tx.get(
-          todoListDocRef.collection("todos")
-        );
+        const todosQuerySnapshot = await tx.get(todoListDocRef.collection("todos"));
         const todos = todosQuerySnapshot.docs.map((d) => ({
           ...(d.data() as TodoDB),
           id: d.id,
           list_id: args.id
         }));
-        const { name, order } = args;
-        const updates: any = {};
+        const { name, order: newOrder, newMembers } = args;
+        const updates: Partial<ListDB> = {};
         if (name) updates.name = name;
-        if (order) {
-          updates.order = order;
+        if (newMembers) {
+          // TODO: implement this
+          // 1: add new members to the list
+          // 2: send notification emails
+          // 3: publish
+        }
+        if (newOrder) {
+          order = newOrder;
+          updates.member_info = {
+            [current_uid]: {
+              ...todoListData.member_info[current_uid],
+              order: newOrder
+            }
+          };
           let listsQuerySnapshot: FirebaseFirestore.QuerySnapshot;
-          let adjustment: -1 | 1;
-          metadata = { prevOrder: todoListData.order };
-          if (order > todoListData.order) {
-            listsQuerySnapshot = await tx.get(
-              listsCollRef
-                .where("order", "<=", order)
-                .where("order", ">", todoListData.order)
-            );
-            adjustment = -1;
+          const prevOrder = todoListData.member_info[current_uid].order;
+          metadata = { prevOrder };
+          if (newOrder > prevOrder) {
+            listsQuerySnapshot = await tx.get(listsCollRef.where("members", "array-contains", current_uid));
+            listsQuerySnapshot.forEach((list) => {
+              const ord = (list.data() as ListDB).member_info[current_uid].order;
+              if (ord <= newOrder && ord > prevOrder) {
+                const newOrd = ord - 1;
+                tx.update(list.ref, `member_info.${current_uid}.order`, newOrd);
+              }
+            });
           } else {
-            listsQuerySnapshot = await tx.get(
-              listsCollRef
-                .where("order", ">=", order)
-                .where("order", "<", todoListData.order)
-            );
-            adjustment = 1;
+            listsQuerySnapshot = await tx.get(listsCollRef.where("members", "array-contains", current_uid));
+            listsQuerySnapshot.forEach((list) => {
+              const ord = (list.data() as ListDB).member_info[current_uid].order;
+              if (ord >= newOrder && ord < prevOrder) {
+                const newOrd = ord + 1;
+                tx.update(list.ref, `member_info.${current_uid}.order`, newOrd);
+              }
+            });
           }
-          listsQuerySnapshot.forEach((list) => {
-            const newOrder = (list.data() as ListDB).order + adjustment;
-            tx.update(list.ref, { order: newOrder });
-          });
         }
         await tx.update(todoListDocRef, updates);
         return {
@@ -260,6 +241,7 @@ export default {
           ...updates,
           members: membersGQL,
           todos,
+          order,
           id: args.id
         };
       });
@@ -340,17 +322,13 @@ export default {
         members = (todoListDocSnapshot.data() as ListDB).members;
         if (!members.includes((ctx.user as fbAdmin.auth.DecodedIdToken).uid)) {
           // TODO: test this
-          throw new ForbiddenError(
-            "Not authorized to touch anything in this list."
-          );
+          throw new ForbiddenError("Not authorized to touch anything in this list.");
         }
         const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
         const deletedTodoData = (await tx.get(todoDocRef)).data() as TodoDB;
 
         const todosQuerySnapshot = await tx.get(
-          todoListDocRef
-            .collection("todos")
-            .where("order", ">", deletedTodoData.order)
+          todoListDocRef.collection("todos").where("order", ">", deletedTodoData.order)
         );
 
         tx.delete(todoDocRef);
@@ -397,9 +375,7 @@ export default {
         destListMembers = [...members];
         if (args.destListId) {
           destTodoListDocRef = listsCollRef.doc(args.destListId);
-          destListMembers = ((await tx.get(
-            destTodoListDocRef
-          )).data() as ListDB).members;
+          destListMembers = ((await tx.get(destTodoListDocRef)).data() as ListDB).members;
         }
         const ctxUid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
         if (!(members.includes(ctxUid) && destListMembers.includes(ctxUid))) {
@@ -407,9 +383,7 @@ export default {
           throw new ForbiddenError("Not authorized to touch this data.");
         }
         const { content, order } = args;
-        const sourceTodoDocRef = sourceTodoListDocRef
-          .collection("todos")
-          .doc(args.todoId);
+        const sourceTodoDocRef = sourceTodoListDocRef.collection("todos").doc(args.todoId);
         let destTodoDocRef = sourceTodoDocRef;
         const todoData = (await tx.get(sourceTodoDocRef)).data() as TodoDB;
         const updates: any = { ...todoData };
@@ -422,12 +396,9 @@ export default {
         }
         if (content) updates.content = content;
         if (args.hasOwnProperty("deadline")) updates.deadline = args.deadline;
-        if (args.hasOwnProperty("description"))
-          updates.description = args.description;
-        if (args.hasOwnProperty("important"))
-          updates.important = args.important;
-        if (args.hasOwnProperty("remind_on"))
-          updates.remind_on = args.remind_on;
+        if (args.hasOwnProperty("description")) updates.description = args.description;
+        if (args.hasOwnProperty("important")) updates.important = args.important;
+        if (args.hasOwnProperty("remind_on")) updates.remind_on = args.remind_on;
         if (order) {
           updates.order = order;
           let todosQuerySnapshot: FirebaseFirestore.QuerySnapshot;
@@ -436,9 +407,7 @@ export default {
           if (args.destListId) {
             // TODO IS BEING MOVED TO ANOTHER LIST
             const sourceTodosQuerySnapshot = await tx.get(
-              sourceTodoListDocRef
-                .collection("todos")
-                .where("order", ">", todoData.order)
+              sourceTodoListDocRef.collection("todos").where("order", ">", todoData.order)
             );
             const destTodosQuerySnapshot = await tx.get(
               destTodoListDocRef.collection("todos").where("order", ">=", order)
@@ -454,9 +423,7 @@ export default {
               tx.update(todo.ref, { order: newOrder });
             });
             await tx.delete(sourceTodoDocRef);
-            destTodoDocRef = destTodoListDocRef
-              .collection("todos")
-              .doc(args.todoId);
+            destTodoDocRef = destTodoListDocRef.collection("todos").doc(args.todoId);
             metadata.prevListId = sourceTodoListDocRef.id;
           } else {
             // TODO IS CHANGING ORDER WITHIN THE SAME LIST
@@ -530,10 +497,7 @@ export default {
           ...dbUserRecord,
           id: uid
         };
-        const [sessionCookie, expiresIn] = await createUserSessionToken(
-          args,
-          decodedIdToken
-        );
+        const [sessionCookie, expiresIn] = await createUserSessionToken(args, decodedIdToken);
         const options: express.CookieOptions = {
           maxAge: expiresIn,
           httpOnly: true,
@@ -608,16 +572,12 @@ export default {
           }
         }
       });
-      const customToken = await fbAdmin
-        .auth()
-        .createCustomToken(userRecord.uid);
+      const customToken = await fbAdmin.auth().createCustomToken(userRecord.uid);
       const app = fbClient.initializeApp({
         apiKey: "AIzaSyCsMTAxjQ15ylh3ORj8SF_k658fqDO0q3g",
         authDomain: "focus-champion-231019.firebaseapp.com"
       });
-      const userCredential = await app
-        .auth()
-        .signInWithCustomToken(customToken);
+      const userCredential = await app.auth().signInWithCustomToken(customToken);
       if (userCredential.user) {
         await userCredential.user.sendEmailVerification({
           url: "http://localhost:4000/"
@@ -627,9 +587,7 @@ export default {
       }
       return {
         success: false,
-        message:
-          "User object created in database but unable to send " +
-          "user email verification message"
+        message: "User object created in database but unable to send " + "user email verification message"
       };
     } catch (error) {
       console.error(error);

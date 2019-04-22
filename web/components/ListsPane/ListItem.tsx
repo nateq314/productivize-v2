@@ -68,6 +68,7 @@ export default function ListItem({
             (isDragging || snapshot.isDragging ? "isDragging " : "")
           }
           onClick={(e: React.MouseEvent<HTMLLIElement>) => {
+            console.log("currentTarget:", e.currentTarget);
             const dx = e.screenX - mouseXY.x;
             const dy = e.screenY - mouseXY.y;
             if (dx <= 2 && dy <= 2) {
