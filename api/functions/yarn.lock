@@ -577,6 +577,13 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.10.40.tgz#4314888d5cd537945d73e9ce165c04cc550144a4"
   integrity sha512-RRSjdwz63kS4u7edIwJUn8NqKLLQ6LyqF/X4+4jp38MBT3Vwetewi2N4dgJEshLbDwNgOJXNYoOwzVZUSSLhkQ==
 
+"@types/nodemailer@^4.6.7":
+  version "4.6.7"
+  resolved "https://registry.yarnpkg.com/@types/nodemailer/-/nodemailer-4.6.7.tgz#ac3c594fac6daf7f71eb4d31c9e4c88b62dbcb87"
+  integrity sha512-slR1wz8I8O20CHNBNhYhObRZ8zeG5FnfFUWLZKk1f0UDYaLZOsBjUfCC9VEFi7oSRCC886DfKmq1JncPDMOrng==
+  dependencies:
+    "@types/node" "*"
+
 "@types/range-parser@*":
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.3.tgz#7ee330ba7caafb98090bece86a5ee44115904c2c"
@@ -632,6 +639,11 @@ accepts@^1.3.5, accepts@~1.3.5:
   dependencies:
     mime-types "~2.1.18"
     negotiator "0.6.1"
+
+addressparser@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/addressparser/-/addressparser-1.0.1.tgz#47afbe1a2a9262191db6838e4fd1d39b40821746"
+  integrity sha1-R6++GiqSYhkdtoOOT9HTm0CCF0Y=
 
 agent-base@^4.1.0:
   version "4.2.1"
@@ -881,7 +893,7 @@ async-retry@^1.2.1:
   dependencies:
     retry "0.12.0"
 
-async@^2.0.1:
+async@^2.0.1, async@^2.6.1:
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/async/-/async-2.6.2.tgz#18330ea7e6e313887f5d2f2a904bac6fe4dd5381"
   integrity sha512-H1qVYh1MYhEEFLsP97cVKqCGo7KfCyTt6uEWqsTBr9SO84oK9Uwbyd/yCW+6rKJLHksBNUVWZDAjfS+Ccx0Bbg==
@@ -2147,6 +2159,25 @@ lcid@^1.0.0:
   dependencies:
     invert-kv "^1.0.0"
 
+libbase64@1.0.3, libbase64@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/libbase64/-/libbase64-1.0.3.tgz#de3023234abeefeb9d49378804c8a94404f5c98c"
+  integrity sha512-ULQZAATVGTAgVNwP61R+MbbSGNBy1tVzWupB9kbE6p+VccWd+J+ICXgOwQic5Yqagzpu+oPZ8sI7yXdWJnPPkA==
+
+libmime@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/libmime/-/libmime-4.0.1.tgz#dc71a19bfa6a97f8249d7205251d862d6fc599fb"
+  integrity sha512-mGgJLRkpkMxZZYE7ncVXokgKfi5ePrIB1H3W/Bv3GbkVnFydIHTsPrfAVW0edxalQHmFfqDMU9W45PidCLG6DA==
+  dependencies:
+    iconv-lite "0.4.23"
+    libbase64 "1.0.3"
+    libqp "1.1.0"
+
+libqp@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/libqp/-/libqp-1.1.0.tgz#f5e6e06ad74b794fb5b5b66988bf728ef1dedbe8"
+  integrity sha1-9ebgatdLeU+1tbZpiL9yjvHe2+g=
+
 lodash.at@^4.6.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/lodash.at/-/lodash.at-4.6.0.tgz#93cdce664f0a1994ea33dd7cd40e23afd11b0ff8"
@@ -2395,6 +2426,35 @@ node-pre-gyp@^0.12.0:
     semver "^5.3.0"
     tar "^4"
 
+nodemailer-build-attachment@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/nodemailer-build-attachment/-/nodemailer-build-attachment-1.0.5.tgz#0018f40e539af29308694001e270dfdb6c498b42"
+  integrity sha512-9W8Wco6kyowoGvEO4XjOFQ00QEfGtdczrQHxhC7sSdxhHTqQOMJXHrmLLE77ab9CMz8JJP4ljq8M4g4t9UpMJQ==
+  dependencies:
+    libbase64 "^1.0.3"
+    libmime "^4.0.1"
+    nodemailer-fetch "^2.1.0"
+
+nodemailer-fetch@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/nodemailer-fetch/-/nodemailer-fetch-2.1.0.tgz#41f631d16b31da55e28249688b329167ddd0d651"
+  integrity sha1-QfYx0Wsx2lXigkloizKRZ93Q1lE=
+
+nodemailer-postmark-transport@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/nodemailer-postmark-transport/-/nodemailer-postmark-transport-2.1.1.tgz#80d5104efd91229e7fc725fb1c974fbb5c6ab0bd"
+  integrity sha512-DkXcs20qkRKn8X0fEUAPpNU6WPWYs2ysZdWuvLOk/5Ry7q3235u/DiZMhcFrXqt0X+JMYdimypEJaDxCLUnfFQ==
+  dependencies:
+    addressparser "^1.0.1"
+    async "^2.6.1"
+    nodemailer-build-attachment "^1.0.5"
+    postmark "^2.2.3"
+
+nodemailer@^6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-6.1.1.tgz#09e88ef4b3646f01089c5d84d007b872141fb575"
+  integrity sha512-/x5MRIh56VyuuhLfcz+DL2SlBARpZpgQIf2A4Ao4hMb69MHSgDIMPwYmFwesGT1lkRDZ0eBSoym5+JoIZ3N+cQ==
+
 nopt@^4.0.1:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/nopt/-/nopt-4.0.1.tgz#d0d4685afd5415193c8c7505602d0d17cd64474d"
@@ -2543,6 +2603,13 @@ pify@^4.0.0:
   resolved "https://registry.yarnpkg.com/pify/-/pify-4.0.1.tgz#4b2cd25c50d598735c50292224fd8c6df41e3231"
   integrity sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==
 
+postmark@^2.2.3:
+  version "2.2.4"
+  resolved "https://registry.yarnpkg.com/postmark/-/postmark-2.2.4.tgz#30a9ef57f738009bae14aa22f2f62e497b6f4a08"
+  integrity sha512-qzqcXrKQnSGIScOpCNz2ArC69zHSuVZKo8RLg8Nioz633NIi4aVYeBNBwCn1hfAcQ/g/eCAyTAvVbMYyPmlSzQ==
+  dependencies:
+    request "^2.88.0"
+
 process-nextick-args@~2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-2.0.0.tgz#a37d732f4271b4ab1ad070d35508e8290788ffaa"
@@ -2689,7 +2756,7 @@ readable-stream@~1.0.32:
     isarray "0.0.1"
     string_decoder "~0.10.x"
 
-request@^2.87.0:
+request@^2.87.0, request@^2.88.0:
   version "2.88.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.88.0.tgz#9c2fca4f7d35b592efe57c7f0a55e81052124fef"
   integrity sha512-NAqBSrijGLZdM0WZNsInLJpkJokL72XYjUpnB0iwsRgxh7dB6COrHnTBNwN0E+lHDAJzu7kLAkDeY08z2/A0hg==

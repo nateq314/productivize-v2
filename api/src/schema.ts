@@ -1,24 +1,27 @@
-import { gql } from "apollo-server-express";
-import { auth, firestore } from "firebase-admin";
+import { gql } from 'apollo-server-express';
+import { auth, firestore } from 'firebase-admin';
 
 export interface ListMemberInfoDB {
   is_admin: boolean;
-  pending_acceptance: boolean;
   order: number;
 }
 
 export interface ListMemberInfoGQL {
   is_admin: boolean;
-  pending_acceptance: boolean;
   user: UserGQL;
 }
 
+type Opaque<K, T> = T & { __TYPE__: K };
+export type Email = Opaque<'Email', string>;
+export type UID = Opaque<'UID', string>;
+
 export interface ListDB {
   name: string;
-  members: string[];
+  members: UID[];
   member_info: {
     [key: string]: ListMemberInfoDB;
   };
+  pending_members: Email[];
 }
 
 export interface ListGQL {
@@ -79,11 +82,11 @@ const schema = gql`
     order: Int!
     todos: [Todo!]!
     members: [ListMember!]!
+    pending_members: [String!]! # array of emails
   }
 
   type ListMember {
     is_admin: Boolean!
-    pending_acceptance: Boolean!
     user: User!
   }
 
@@ -129,12 +132,7 @@ const schema = gql`
     ): Todo!
     login(idToken: String, session: String): LoginResult!
     logout: LoginResult!
-    register(
-      email: String!
-      password: String!
-      first_name: String!
-      last_name: String!
-    ): Result!
+    register(email: String!, password: String!, first_name: String!, last_name: String!): Result!
   }
 
   type Query {

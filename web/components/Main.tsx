@@ -1,22 +1,19 @@
-import React, { useState } from "react";
-import { Query } from "react-apollo";
-import styled from "styled-components";
-import AppBar from "./AppBar";
-import AppContent from "./AppContent";
-import CreateNewListModal from "./CreateListModalContainer";
-import { FETCH_LISTS } from "../other/queries";
-import {
-  LIST_EVENTS_SUBSCRIPTION,
-  ListEventsSubscriptionData
-} from "../other/subscriptions";
-import UpdateListModal from "./UpdateListModalContainer";
-import { User } from "../pages/_app";
+import React, { useState } from 'react';
+import { Query } from 'react-apollo';
+import styled from 'styled-components';
+import AppBar from './AppBar';
+import AppContent from './AppContent';
+import CreateNewListModal from './CreateListModalContainer';
+import { FETCH_LISTS } from '../other/queries';
+import { LIST_EVENTS_SUBSCRIPTION, ListEventsSubscriptionData } from '../other/subscriptions';
+import UpdateListModal from './UpdateListModalContainer';
+import { User } from '../pages/_app';
 
 const StyledMain = styled.div`
   height: 100vh;
   display: grid;
   grid-template-rows: 70px auto;
-  grid-template-areas: "appbar" "app_content";
+  grid-template-areas: 'appbar' 'app_content';
 `;
 
 export interface TodoListsQueryResult {
@@ -25,7 +22,6 @@ export interface TodoListsQueryResult {
 
 export interface ListMember {
   is_admin: boolean;
-  pending_acceptance: boolean;
   user: User;
 }
 
@@ -34,6 +30,7 @@ export interface TodoList {
   name: string;
   order: number;
   members: ListMember[];
+  pending_members: string[];
   todos: Todo[];
 }
 
@@ -60,7 +57,7 @@ export default function Main() {
   const [newListModalIsVisible, setNewListModalVisibility] = useState(false);
   const [updateListModalState, setUpdateListModalState] = useState({
     visible: false,
-    list: null
+    list: null,
   } as UpdateListModalState);
 
   const openNewListModal = () => {
@@ -70,14 +67,14 @@ export default function Main() {
   const openUpdateListModal = (list: TodoList) => {
     setUpdateListModalState({
       visible: true,
-      list
+      list,
     });
   };
 
   return (
     <Query query={FETCH_LISTS}>
       {({ loading, error, data, subscribeToMore }) => {
-        if (loading) return "Loading...";
+        if (loading) return 'Loading...';
         if (error) return `Error! ${error.message}`;
 
         const lists: TodoList[] = (data as TodoListsQueryResult).lists;
@@ -93,14 +90,12 @@ export default function Main() {
               subscribeToListEvents={() =>
                 subscribeToMore({
                   document: LIST_EVENTS_SUBSCRIPTION,
-                  updateQuery
+                  updateQuery,
                 })
               }
             />
             {newListModalIsVisible && (
-              <CreateNewListModal
-                closeModal={() => setNewListModalVisibility(false)}
-              />
+              <CreateNewListModal closeModal={() => setNewListModalVisibility(false)} />
             )}
             {updateListModalState.list && updateListModalState.visible && (
               <UpdateListModal
@@ -108,7 +103,7 @@ export default function Main() {
                 closeModal={() =>
                   setUpdateListModalState({
                     visible: false,
-                    list: null
+                    list: null,
                   })
                 }
               />
@@ -122,7 +117,7 @@ export default function Main() {
 
 function updateQuery(
   prev: TodoListsQueryResult,
-  { subscriptionData }: ListEventsSubscriptionData
+  { subscriptionData }: ListEventsSubscriptionData,
 ): TodoListsQueryResult {
   if (!subscriptionData.data) return prev;
   const {
@@ -132,42 +127,34 @@ function updateQuery(
     todoCreated,
     todoDeleted,
     todoUpdated,
-    metadata
+    metadata,
   } = subscriptionData.data.listEvents;
   if (todoCreated) {
-    const listIndex = prev.lists.findIndex(
-      (list) => list.id === todoCreated.list_id
-    );
+    const listIndex = prev.lists.findIndex((list) => list.id === todoCreated.list_id);
     if (listIndex >= 0) {
       // If the list exists
-      const todoIndex = prev.lists[listIndex].todos.findIndex(
-        (todo) => todo.id === todoCreated.id
-      );
+      const todoIndex = prev.lists[listIndex].todos.findIndex((todo) => todo.id === todoCreated.id);
       if (todoIndex === -1) {
         // If the todo does NOT exist
         const updatedList = {
           ...prev.lists[listIndex],
-          todos: prev.lists[listIndex].todos.concat(todoCreated)
+          todos: prev.lists[listIndex].todos.concat(todoCreated),
         };
         return {
           lists: [
             ...prev.lists.slice(0, listIndex),
             updatedList,
-            ...prev.lists.slice(listIndex + 1)
-          ]
+            ...prev.lists.slice(listIndex + 1),
+          ],
         };
       }
     }
     return { lists: prev.lists };
   } else if (todoDeleted) {
-    const listIndex = prev.lists.findIndex(
-      (list) => list.id === todoDeleted.list_id
-    );
+    const listIndex = prev.lists.findIndex((list) => list.id === todoDeleted.list_id);
     if (listIndex >= 0) {
       // If the list exists
-      const todoIndex = prev.lists[listIndex].todos.findIndex(
-        (todo) => todo.id === todoDeleted.id
-      );
+      const todoIndex = prev.lists[listIndex].todos.findIndex((todo) => todo.id === todoDeleted.id);
       if (todoIndex >= 0) {
         // If the todo still exists
         const deletedTodoOrder = prev.lists[listIndex].todos[todoIndex].order;
@@ -175,22 +162,22 @@ function updateQuery(
           ...prev.lists[listIndex],
           todos: [
             ...prev.lists[listIndex].todos.slice(0, todoIndex),
-            ...prev.lists[listIndex].todos.slice(todoIndex + 1)
+            ...prev.lists[listIndex].todos.slice(todoIndex + 1),
           ].map((t) => {
             return t.order > deletedTodoOrder
               ? {
                   ...t,
-                  order: t.order - 1
+                  order: t.order - 1,
                 }
               : t;
-          })
+          }),
         };
         return {
           lists: [
             ...prev.lists.slice(0, listIndex),
             updatedList,
-            ...prev.lists.slice(listIndex + 1)
-          ]
+            ...prev.lists.slice(listIndex + 1),
+          ],
         };
       }
     }
@@ -200,18 +187,13 @@ function updateQuery(
     // time we get here. So here we only care about updates that have side
     // effects. E.g. order.
     if (metadata) {
-      const listIndex = prev.lists.findIndex(
-        (list) => list.id === todoUpdated.list_id
-      );
+      const listIndex = prev.lists.findIndex((list) => list.id === todoUpdated.list_id);
       const { prevOrder } = metadata;
       const newOrder = todoUpdated.order;
       // We only want to return anything if we know that all other todo orders
       // (besides the one updated) have not yet been updated. If such is the case,
       // then there will be exactly two todo items with order === newOrder.
-      if (
-        prev.lists[listIndex].todos.filter((t) => t.order === newOrder)
-          .length === 2
-      ) {
+      if (prev.lists[listIndex].todos.filter((t) => t.order === newOrder).length === 2) {
         return {
           lists: [
             ...prev.lists.slice(0, listIndex),
@@ -228,7 +210,7 @@ function updateQuery(
                         // prevOrder < order <= newOrder
                         return {
                           ...t,
-                          order: t.order - 1
+                          order: t.order - 1,
                         };
                       } else return t;
                     })
@@ -241,36 +223,30 @@ function updateQuery(
                         // newOrder <= order < prevOrder
                         return {
                           ...t,
-                          order: t.order + 1
+                          order: t.order + 1,
                         };
                       } else return t;
-                    })
+                    }),
             },
-            ...prev.lists.slice(listIndex + 1)
-          ]
+            ...prev.lists.slice(listIndex + 1),
+          ],
         };
       }
     }
   } else if (listCreated) {
-    const index = prev.lists.findIndex(
-      (list) => list.id === listCreated.id || list.id === "temp"
-    );
+    const index = prev.lists.findIndex((list) => list.id === listCreated.id || list.id === 'temp');
     return index >= 0
       ? // Already added
         {
-          lists: [
-            ...prev.lists.slice(0, index),
-            listCreated,
-            ...prev.lists.slice(index + 1)
-          ]
+          lists: [...prev.lists.slice(0, index), listCreated, ...prev.lists.slice(index + 1)],
         }
       : // Or this could be another terminal
         {
-          lists: prev.lists.concat(listCreated)
+          lists: prev.lists.concat(listCreated),
         };
   } else if (listDeleted) {
     return {
-      lists: prev.lists.filter((list) => list.id !== listDeleted.id)
+      lists: prev.lists.filter((list) => list.id !== listDeleted.id),
     };
   } else if (listUpdated) {
     if (metadata) {
@@ -285,14 +261,14 @@ function updateQuery(
                   if (l.id === listUpdated.id)
                     return {
                       ...listUpdated,
-                      todos: l.todos
+                      todos: l.todos,
                     };
                   else if (l.order <= newOrder && l.order > prevOrder) {
                     // decrement all todos with order such that
                     // prevOrder < order <= newOrder
                     return {
                       ...l,
-                      order: l.order - 1
+                      order: l.order - 1,
                     };
                   } else return l;
                 })
@@ -301,17 +277,17 @@ function updateQuery(
                   if (l.id === listUpdated.id)
                     return {
                       ...listUpdated,
-                      todos: l.todos
+                      todos: l.todos,
                     };
                   else if (l.order >= newOrder && l.order < prevOrder) {
                     // increment all todos with order such that
                     // newOrder <= order < prevOrder
                     return {
                       ...l,
-                      order: l.order + 1
+                      order: l.order + 1,
                     };
                   } else return l;
-                })
+                }),
         };
       }
     }

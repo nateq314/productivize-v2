@@ -1,5 +1,5 @@
-import { gql } from "apollo-boost";
-import { TodoList, Todo } from "../components/Main";
+import { gql } from 'apollo-boost';
+import { TodoList, Todo } from '../components/Main';
 
 export interface ListEventsSubscriptionData {
   subscriptionData: {
@@ -27,7 +27,6 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
         order
         members {
           is_admin
-          pending_acceptance
           user {
             id
             email
@@ -35,6 +34,7 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
             last_name
           }
         }
+        pending_members
         todos {
           id
         }
@@ -48,7 +48,6 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
         order
         members {
           is_admin
-          pending_acceptance
           user {
             id
             email
@@ -56,6 +55,7 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
             last_name
           }
         }
+        pending_members
       }
       todoCreated {
         id

@@ -1,4 +1,4 @@
-import { gql } from "apollo-boost";
+import { gql } from 'apollo-boost';
 
 export const FETCH_CURRENT_USER = gql`
   query {
@@ -19,7 +19,6 @@ export const FETCH_LISTS = gql`
       order
       members {
         is_admin
-        pending_acceptance
         user {
           id
           email
@@ -27,6 +26,7 @@ export const FETCH_LISTS = gql`
           last_name
         }
       }
+      pending_members
       todos {
         id
         list_id

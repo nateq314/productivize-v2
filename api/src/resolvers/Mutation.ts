@@ -1,32 +1,62 @@
-import * as fbAdmin from "firebase-admin";
-import * as fbClient from "firebase";
-import { ForbiddenError } from "apollo-server-express";
-import * as express from "express";
-import { Context } from "../apolloServer";
-import { verifyIdToken, createUserSessionToken, verifyUserSessionToken } from "../firebase";
-import { ListDB, ListGQL, TodoDB, TodoGQL, UserGQL, ListMemberInfoGQL, UserDB } from "../schema";
-import { pubsub, LIST_EVENTS } from "./Subscription";
+import * as fbAdmin from 'firebase-admin';
+import * as fbClient from 'firebase';
+import { ForbiddenError } from 'apollo-server-express';
+import * as express from 'express';
+import * as nodemailer from 'nodemailer';
+import { Context } from '../apolloServer';
+import { verifyIdToken, createUserSessionToken, verifyUserSessionToken } from '../firebase';
+import {
+  ListDB,
+  ListGQL,
+  TodoDB,
+  TodoGQL,
+  UserGQL,
+  ListMemberInfoGQL,
+  UserDB,
+  Email,
+  UID,
+} from '../schema';
+import { pubsub, LIST_EVENTS } from './Subscription';
+
+const postmarkTransport = require('nodemailer-postmark-transport');
 
 interface ILogin {
   idToken?: string;
   session?: string;
 }
 
-type TodoDateFields = "added_on" | "completed_on" | "deadline" | "remind_on";
+interface UpdateListArgs {
+  id: string;
+  name?: string;
+  order?: number;
+  newMembers?: Email[];
+}
+
+type TodoDateFields = 'added_on' | 'completed_on' | 'deadline' | 'remind_on';
 
 function convertDateFieldsForPublishing(todo: TodoDB & { id: string; list_id: string }) {
   const converted: any = { ...todo };
-  (["added_on", "completed_on", "deadline", "remind_on"] as Array<TodoDateFields>).forEach((field) => {
-    const value = todo[field];
-    if (value) {
-      converted[field] = value instanceof Date ? value.toISOString() : value.toDate().toISOString();
-    }
-  });
+  (['added_on', 'completed_on', 'deadline', 'remind_on'] as Array<TodoDateFields>).forEach(
+    (field) => {
+      const value = todo[field];
+      if (value) {
+        converted[field] =
+          value instanceof Date ? value.toISOString() : value.toDate().toISOString();
+      }
+    },
+  );
   return converted as TodoGQL;
 }
 
 const firestore = fbAdmin.firestore();
-const listsCollRef = firestore.collection("lists");
+const listsCollRef = firestore.collection('lists');
+const transport = nodemailer.createTransport(
+  postmarkTransport({
+    auth: {
+      apiKey: '1c36a2fb-83e9-4563-ad47-ffc33f535791', // TODO: envify this
+    },
+  }),
+);
 
 export default {
   /**********************
@@ -39,26 +69,28 @@ export default {
       // ====== BEGIN TRANSACTION =============================================
       const listCreated = await firestore.runTransaction(async (tx) => {
         const authUserRecord = await fbAdmin.auth().getUser(current_uid);
-        const userDocSnapshot = await tx.get(firestore.collection("users").doc(current_uid));
+        const userDocSnapshot = await tx.get(firestore.collection('users').doc(current_uid));
         const dbUserRecord = userDocSnapshot.data() as UserDB;
         const user: UserGQL = {
           ...authUserRecord,
           ...dbUserRecord,
-          id: userDocSnapshot.id
+          id: userDocSnapshot.id,
         };
-        const currUserLists = await tx.get(listsCollRef.where("members", "array-contains", current_uid));
+        const currUserLists = await tx.get(
+          listsCollRef.where('members', 'array-contains', current_uid),
+        );
         const newListDocRef = listsCollRef.doc();
         const order = currUserLists.size + 1;
         const newListData: ListDB = {
           name: args.name,
-          members: [current_uid],
+          members: [current_uid as UID],
           member_info: {
             [current_uid]: {
               is_admin: true,
               order,
-              pending_acceptance: false
-            }
-          }
+            },
+          },
+          pending_members: [],
         };
         tx.create(newListDocRef, newListData);
         return {
@@ -66,21 +98,20 @@ export default {
           members: [
             {
               is_admin: true,
-              pending_acceptance: false,
-              user
-            }
+              user,
+            },
           ],
           name: newListData.name,
           order,
-          todos: []
+          todos: [],
         } as ListGQL;
       });
       // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, {
         listCreated,
-        members: [current_uid]
+        members: [current_uid],
       });
-      console.log("listCreated:", listCreated);
+      console.log('listCreated:', listCreated);
       return listCreated;
     } catch (error) {
       console.error(error);
@@ -103,29 +134,33 @@ export default {
         members = deletedListData.members;
         if (!members.includes(current_uid)) {
           // TODO: test this
-          throw new ForbiddenError("You are not authorized to touch this list.");
+          throw new ForbiddenError('You are not authorized to touch this list.');
         }
         const membersGQL = await Promise.all(
           deletedListData.members.map(async (member_uid) => {
             const authUserRecord = await fbAdmin.auth().getUser(current_uid);
-            const userDocSnapshot = await tx.get(firestore.collection("users").doc(member_uid));
+            const userDocSnapshot = await tx.get(firestore.collection('users').doc(member_uid));
             const dbUserRecord = userDocSnapshot.data() as UserDB;
             const user: UserGQL = {
               ...authUserRecord,
               ...dbUserRecord,
-              id: userDocSnapshot.id
+              id: userDocSnapshot.id,
             };
             return {
               ...deletedListData.member_info[member_uid],
-              user
+              user,
             };
-          })
+          }),
         );
         const higherOrderLists = await tx.get(
-          listsCollRef.where(`member_info.${current_uid}.order`, ">", deletedListData.member_info[current_uid].order)
+          listsCollRef.where(
+            `member_info.${current_uid}.order`,
+            '>',
+            deletedListData.member_info[current_uid].order,
+          ),
         );
         // First delete all the todos in the "todos" subcollection, if any.
-        const todos = await todoListDocRef.collection("todos").listDocuments();
+        const todos = await todoListDocRef.collection('todos').listDocuments();
         todos.forEach((todo) => {
           tx.delete(todo);
         });
@@ -138,14 +173,14 @@ export default {
         return {
           ...deletedListData,
           id: todoListDocRef.id,
-          members: membersGQL
+          members: membersGQL,
         } as Partial<ListGQL>;
       });
       // ====== END TRANSACTION ===============================================
-      console.log("listDeleted:", listDeleted);
+      console.log('listDeleted:', listDeleted);
       pubsub.publish(LIST_EVENTS, {
         listDeleted,
-        members
+        members,
       });
       return { success: true };
     } catch (error) {
@@ -157,10 +192,11 @@ export default {
   /**********************
    * UPDATE A LIST
    *********************/
-  async updateList(parent: any, args: any, ctx: Context, info: any) {
+  async updateList(parent: any, args: UpdateListArgs, ctx: Context, info: any) {
     authorize(ctx);
-    let members: string[] = [];
+    let members: (Email | UID)[] = [];
     let metadata = null;
+    let filteredNewMembers: Email[] = [];
     try {
       // ====== BEGIN TRANSACTION =============================================
       const listUpdated = await firestore.runTransaction(async (tx) => {
@@ -168,55 +204,60 @@ export default {
         const todoListDocRef = listsCollRef.doc(args.id);
         const todoListData = (await tx.get(todoListDocRef)).data() as ListDB;
         members = todoListData.members;
-        if (!members.includes(current_uid)) {
+        if (!members.includes(current_uid as UID)) {
           // TODO: test this
-          throw new ForbiddenError("Not authorized to touch anything in this list.");
+          throw new ForbiddenError('Not authorized to touch anything in this list.');
         }
         let order = todoListData.member_info[current_uid].order;
         const membersGQL: ListMemberInfoGQL[] = await Promise.all(
           members.map(async (uid) => {
             const authUserRecord = await fbAdmin.auth().getUser(uid);
-            const userDocSnapshot = await tx.get(firestore.collection("users").doc(uid));
+            const userDocSnapshot = await tx.get(firestore.collection('users').doc(uid));
             const dbUserRecord = userDocSnapshot.data() as UserDB;
             const user: UserGQL = {
               ...authUserRecord,
               ...dbUserRecord,
-              id: userDocSnapshot.id
+              id: userDocSnapshot.id,
             };
             return {
               ...todoListData.member_info[uid],
-              user
+              user,
             };
-          })
+          }),
         );
-        const todosQuerySnapshot = await tx.get(todoListDocRef.collection("todos"));
+        const todosQuerySnapshot = await tx.get(todoListDocRef.collection('todos'));
         const todos = todosQuerySnapshot.docs.map((d) => ({
           ...(d.data() as TodoDB),
           id: d.id,
-          list_id: args.id
+          list_id: args.id,
         }));
         const { name, order: newOrder, newMembers } = args;
         const updates: Partial<ListDB> = {};
         if (name) updates.name = name;
         if (newMembers) {
-          // TODO: implement this
           // 1: add new members to the list
-          // 2: send notification emails
-          // 3: publish
+          const currentMemberEmails = membersGQL.map((m) => m.user.email);
+          filteredNewMembers = newMembers.filter(
+            (m) => !currentMemberEmails.includes(m) && !todoListData.pending_members.includes(m),
+          );
+          if (filteredNewMembers.length > 0)
+            updates.pending_members = todoListData.pending_members.concat(filteredNewMembers);
         }
         if (newOrder) {
           order = newOrder;
           updates.member_info = {
             [current_uid]: {
               ...todoListData.member_info[current_uid],
-              order: newOrder
-            }
+              order: newOrder,
+            },
           };
           let listsQuerySnapshot: FirebaseFirestore.QuerySnapshot;
           const prevOrder = todoListData.member_info[current_uid].order;
           metadata = { prevOrder };
           if (newOrder > prevOrder) {
-            listsQuerySnapshot = await tx.get(listsCollRef.where("members", "array-contains", current_uid));
+            listsQuerySnapshot = await tx.get(
+              listsCollRef.where('members', 'array-contains', current_uid),
+            );
             listsQuerySnapshot.forEach((list) => {
               const ord = (list.data() as ListDB).member_info[current_uid].order;
               if (ord <= newOrder && ord > prevOrder) {
@@ -225,7 +266,9 @@ export default {
               }
             });
           } else {
-            listsQuerySnapshot = await tx.get(listsCollRef.where("members", "array-contains", current_uid));
+            listsQuerySnapshot = await tx.get(
+              listsCollRef.where('members', 'array-contains', current_uid),
+            );
             listsQuerySnapshot.forEach((list) => {
               const ord = (list.data() as ListDB).member_info[current_uid].order;
               if (ord >= newOrder && ord < prevOrder) {
@@ -236,22 +279,42 @@ export default {
           }
         }
         await tx.update(todoListDocRef, updates);
-        return {
+        const updatedListData = {
           ...todoListData,
           ...updates,
           members: membersGQL,
           todos,
           order,
-          id: args.id
+          id: args.id,
         };
+        if (filteredNewMembers.length > 0) {
+          // TODO: send a notification email to each address in filteredNewMembers
+          filteredNewMembers.forEach(async (newMemberEmail) => {
+            const mail = {
+              from: 'info@productivize.net',
+              to: newMemberEmail,
+              subject: `Invitation to join list "${updatedListData.name}"`,
+              text: '__text_format_goes_here__',
+              html: '<h1>Hello Nathan</h1>',
+            };
+            try {
+              const result = await transport.sendMail(mail);
+              console.info(result);
+            } catch (error) {
+              console.error(error);
+            }
+          });
+        }
+        return updatedListData;
       });
       // ====== END TRANSACTION ===============================================
+      // TODO: handle addition of new members on FE
       pubsub.publish(LIST_EVENTS, {
         listUpdated,
         metadata,
-        members
+        members,
       });
-      console.log("listUpdated:", listUpdated);
+      console.log('listUpdated:', listUpdated);
       return listUpdated;
     } catch (error) {
       console.error(error);
@@ -269,7 +332,7 @@ export default {
       // ====== BEGIN TRANSACTION =============================================
       const todoCreated = await firestore.runTransaction(async (tx) => {
         const todoListDocRef = listsCollRef.doc(args.listId);
-        const todosCollRef = todoListDocRef.collection("todos");
+        const todosCollRef = todoListDocRef.collection('todos');
         const todoListDocSnapshot = await tx.get(todoListDocRef);
         members = (todoListDocSnapshot.data() as ListDB).members;
         const currTodosSnapshot = await tx.get(todosCollRef);
@@ -281,25 +344,25 @@ export default {
           completed: false,
           completed_on: null,
           deadline: args.deadline || null,
-          description: "",
+          description: '',
           important: args.important,
           order: currTodosSnapshot.size + 1,
-          remind_on: args.remind_on || null
+          remind_on: args.remind_on || null,
         };
         tx.create(newTodoDocRef, newTodoData);
         return {
           ...newTodoData,
           id: newTodoDocRef.id,
-          list_id: args.listId
+          list_id: args.listId,
         };
       });
       // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, {
         todoCreated: {
           ...todoCreated,
-          added_on: todoCreated.added_on.toISOString()
+          added_on: todoCreated.added_on.toISOString(),
         },
-        members
+        members,
       });
       return todoCreated;
     } catch (error) {
@@ -322,13 +385,13 @@ export default {
         members = (todoListDocSnapshot.data() as ListDB).members;
         if (!members.includes((ctx.user as fbAdmin.auth.DecodedIdToken).uid)) {
           // TODO: test this
-          throw new ForbiddenError("Not authorized to touch anything in this list.");
+          throw new ForbiddenError('Not authorized to touch anything in this list.');
         }
-        const todoDocRef = todoListDocRef.collection("todos").doc(args.todoId);
+        const todoDocRef = todoListDocRef.collection('todos').doc(args.todoId);
         const deletedTodoData = (await tx.get(todoDocRef)).data() as TodoDB;
 
         const todosQuerySnapshot = await tx.get(
-          todoListDocRef.collection("todos").where("order", ">", deletedTodoData.order)
+          todoListDocRef.collection('todos').where('order', '>', deletedTodoData.order),
         );
 
         tx.delete(todoDocRef);
@@ -339,14 +402,14 @@ export default {
         return {
           ...deletedTodoData,
           id: todoDocRef.id,
-          list_id: args.listId
+          list_id: args.listId,
         };
       });
       // ====== END TRANSACTION ===============================================
 
       pubsub.publish(LIST_EVENTS, {
         todoDeleted: convertDateFieldsForPublishing(todoDeleted),
-        members
+        members,
       });
       return { success: true };
     } catch (error) {
@@ -380,25 +443,25 @@ export default {
         const ctxUid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
         if (!(members.includes(ctxUid) && destListMembers.includes(ctxUid))) {
           // TODO: test this
-          throw new ForbiddenError("Not authorized to touch this data.");
+          throw new ForbiddenError('Not authorized to touch this data.');
         }
         const { content, order } = args;
-        const sourceTodoDocRef = sourceTodoListDocRef.collection("todos").doc(args.todoId);
+        const sourceTodoDocRef = sourceTodoListDocRef.collection('todos').doc(args.todoId);
         let destTodoDocRef = sourceTodoDocRef;
         const todoData = (await tx.get(sourceTodoDocRef)).data() as TodoDB;
         const updates: any = { ...todoData };
 
         // TODO: find a better way to do this
-        if (args.hasOwnProperty("completed")) {
+        if (args.hasOwnProperty('completed')) {
           updates.completed = args.completed;
           if (args.completed) updates.completed_on = new Date();
           else updates.completed_on = null;
         }
         if (content) updates.content = content;
-        if (args.hasOwnProperty("deadline")) updates.deadline = args.deadline;
-        if (args.hasOwnProperty("description")) updates.description = args.description;
-        if (args.hasOwnProperty("important")) updates.important = args.important;
-        if (args.hasOwnProperty("remind_on")) updates.remind_on = args.remind_on;
+        if (args.hasOwnProperty('deadline')) updates.deadline = args.deadline;
+        if (args.hasOwnProperty('description')) updates.description = args.description;
+        if (args.hasOwnProperty('important')) updates.important = args.important;
+        if (args.hasOwnProperty('remind_on')) updates.remind_on = args.remind_on;
         if (order) {
           updates.order = order;
           let todosQuerySnapshot: FirebaseFirestore.QuerySnapshot;
@@ -407,10 +470,10 @@ export default {
           if (args.destListId) {
             // TODO IS BEING MOVED TO ANOTHER LIST
             const sourceTodosQuerySnapshot = await tx.get(
-              sourceTodoListDocRef.collection("todos").where("order", ">", todoData.order)
+              sourceTodoListDocRef.collection('todos').where('order', '>', todoData.order),
             );
             const destTodosQuerySnapshot = await tx.get(
-              destTodoListDocRef.collection("todos").where("order", ">=", order)
+              destTodoListDocRef.collection('todos').where('order', '>=', order),
             );
             sourceTodosQuerySnapshot.forEach((todo) => {
               // decrement source todos
@@ -423,24 +486,24 @@ export default {
               tx.update(todo.ref, { order: newOrder });
             });
             await tx.delete(sourceTodoDocRef);
-            destTodoDocRef = destTodoListDocRef.collection("todos").doc(args.todoId);
+            destTodoDocRef = destTodoListDocRef.collection('todos').doc(args.todoId);
             metadata.prevListId = sourceTodoListDocRef.id;
           } else {
             // TODO IS CHANGING ORDER WITHIN THE SAME LIST
             if (order > todoData.order) {
               todosQuerySnapshot = await tx.get(
                 sourceTodoListDocRef
-                  .collection("todos")
-                  .where("order", "<=", order)
-                  .where("order", ">=", todoData.order)
+                  .collection('todos')
+                  .where('order', '<=', order)
+                  .where('order', '>=', todoData.order),
               );
               adjustment = -1;
             } else {
               todosQuerySnapshot = await tx.get(
                 sourceTodoListDocRef
-                  .collection("todos")
-                  .where("order", ">=", order)
-                  .where("order", "<=", todoData.order)
+                  .collection('todos')
+                  .where('order', '>=', order)
+                  .where('order', '<=', todoData.order),
               );
               adjustment = +1;
             }
@@ -455,14 +518,14 @@ export default {
           ...todoData,
           ...updates,
           id: destTodoDocRef.id,
-          list_id: destTodoListDocRef.id
+          list_id: destTodoListDocRef.id,
         } as TodoDB & { id: string; list_id: string };
       });
       // ====== END TRANSACTION ===============================================
       pubsub.publish(LIST_EVENTS, {
         todoUpdated: convertDateFieldsForPublishing(todoUpdated),
         metadata,
-        members: destListMembers
+        members: destListMembers,
       });
       return todoUpdated;
     } catch (error) {
@@ -473,7 +536,7 @@ export default {
 
   async login(parent: any, args: ILogin, ctx: Context, info: any) {
     try {
-      if (args.idToken && args.idToken !== "undefined") {
+      if (args.idToken && args.idToken !== 'undefined') {
         // User just logged in via email/password and either
         // 1: client is calling this in order to set a session cookie, API <-> CLIENT, or
         // 2: SSR backend is calling this in order to fetch the user object
@@ -481,39 +544,39 @@ export default {
         const decodedIdToken = await verifyIdToken(args.idToken);
         const { uid } = decodedIdToken;
         if (!uid) {
-          console.error("User is not registered");
+          console.error('User is not registered');
           return {
-            error: "User is not registered"
+            error: 'User is not registered',
           };
         }
         const authUserRecord = await fbAdmin.auth().getUser(uid);
         const userDocSnapshot = await firestore
-          .collection("users")
+          .collection('users')
           .doc(uid)
           .get();
         const dbUserRecord = userDocSnapshot.data() as UserDB;
         const user: UserGQL = {
           ...authUserRecord,
           ...dbUserRecord,
-          id: uid
+          id: uid,
         };
         const [sessionCookie, expiresIn] = await createUserSessionToken(args, decodedIdToken);
         const options: express.CookieOptions = {
           maxAge: expiresIn,
           httpOnly: true,
-          secure: false // TODO: set secure: true in production
+          secure: false, // TODO: set secure: true in production
         };
-        ctx.res.cookie("session", sessionCookie, options);
+        ctx.res.cookie('session', sessionCookie, options);
         return { user };
       } else {
         // User is re-visiting the site and automatically reauthenticating using the
         // existing session cookie (SSR <-> CLIENT).
-        const sessionCookie = args.session || "";
+        const sessionCookie = args.session || '';
         if (sessionCookie) {
           try {
             const decodedClaims = await verifyUserSessionToken(sessionCookie);
             const userDocSnapshot = await firestore
-              .collection("users")
+              .collection('users')
               .doc(decodedClaims.uid)
               .get();
             const user = userDocSnapshot.data() as Partial<UserGQL>;
@@ -524,7 +587,7 @@ export default {
             // is invalid or revoked.
             console.error(error);
             return {
-              error: `Invalid login request: ${error}`
+              error: `Invalid login request: ${error}`,
             };
           }
         }
@@ -533,15 +596,15 @@ export default {
       console.error(error);
     }
     return {
-      error: "Invalid login request"
+      error: 'Invalid login request',
     };
   },
 
   async logout(parent: any, args: any, ctx: Context, info: any) {
-    const sessionCookie = ctx.req.cookies.session || "";
-    if (sessionCookie) ctx.res.clearCookie("session");
+    const sessionCookie = ctx.req.cookies.session || '';
+    if (sessionCookie) ctx.res.clearCookie('session');
     return {
-      error: "Session cookie is invalid, or no session to log out of"
+      error: 'Session cookie is invalid, or no session to log out of',
     };
   },
 
@@ -550,55 +613,55 @@ export default {
       const { email, password, first_name, last_name } = args;
       const userRecord = await fbAdmin.auth().createUser({
         email,
-        password
+        password,
       });
       // let writeResult: FirebaseFirestore.WriteResult;
       /* writeResult = */ await firestore
-        .collection("users")
+        .collection('users')
         .doc(userRecord.uid)
         .create({
           email,
           first_name,
-          last_name
+          last_name,
         });
       /* writeResult = */ await listsCollRef.doc().create({
-        name: "MAIN",
+        name: 'MAIN',
         order: 1,
         members: [userRecord.uid],
         member_info: {
           [userRecord.uid]: {
             is_admin: true,
-            pending_acceptance: false
-          }
-        }
+          },
+        },
       });
       const customToken = await fbAdmin.auth().createCustomToken(userRecord.uid);
       const app = fbClient.initializeApp({
-        apiKey: "AIzaSyCsMTAxjQ15ylh3ORj8SF_k658fqDO0q3g",
-        authDomain: "focus-champion-231019.firebaseapp.com"
+        apiKey: 'AIzaSyCsMTAxjQ15ylh3ORj8SF_k658fqDO0q3g',
+        authDomain: 'focus-champion-231019.firebaseapp.com',
       });
       const userCredential = await app.auth().signInWithCustomToken(customToken);
       if (userCredential.user) {
         await userCredential.user.sendEmailVerification({
-          url: "http://localhost:4000/"
+          url: 'http://localhost:4000/',
         });
         await app.auth().signOut();
         return { success: true };
       }
       return {
         success: false,
-        message: "User object created in database but unable to send " + "user email verification message"
+        message:
+          'User object created in database but unable to send ' + 'user email verification message',
       };
     } catch (error) {
       console.error(error);
       return {
         success: false,
-        message: error.message
+        message: error.message,
       };
     }
-  }
+  },
 };
 
 function authorize(ctx: Context) {
-  if (!ctx.user) ctx.res.status(401).send("UNAUTHORIZED REQUEST");
+  if (!ctx.user) ctx.res.status(401).send('UNAUTHORIZED REQUEST');
 }

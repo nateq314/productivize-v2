@@ -1,18 +1,16 @@
-import React, { useContext } from "react";
-import { Mutation } from "react-apollo";
-import { FETCH_LISTS } from "../other/queries";
-import { CREATE_LIST } from "../other/mutations";
-import { TodoListsQueryResult } from "./Main";
-import { UserContext, User } from "../pages/_app";
+import React, { useContext } from 'react';
+import { Mutation } from 'react-apollo';
+import { FETCH_LISTS } from '../other/queries';
+import { CREATE_LIST } from '../other/mutations';
+import { TodoListsQueryResult } from './Main';
+import { UserContext, User } from '../pages/_app';
 
 interface CreateListVariables {
   name: string;
 }
 
 interface CreateListProps {
-  children: (
-    createListFn: (variables: CreateListVariables) => void
-  ) => React.ReactNode;
+  children: (createListFn: (variables: CreateListVariables) => void) => React.ReactNode;
 }
 
 export default function CreateList({ children }: CreateListProps) {
@@ -26,7 +24,7 @@ export default function CreateList({ children }: CreateListProps) {
       mutation={CREATE_LIST}
       update={(cache, { data: { createList } }) => {
         const listsData: TodoListsQueryResult | null = cache.readQuery({
-          query: FETCH_LISTS
+          query: FETCH_LISTS,
         });
         const lists = listsData ? listsData.lists : [];
         // order === -1 for optimistic update only
@@ -34,8 +32,8 @@ export default function CreateList({ children }: CreateListProps) {
         cache.writeQuery({
           query: FETCH_LISTS,
           data: {
-            lists: lists.concat(createList)
-          }
+            lists: lists.concat(createList),
+          },
         });
       }}
     >
@@ -44,23 +42,22 @@ export default function CreateList({ children }: CreateListProps) {
           createList({
             variables,
             optimisticResponse: {
-              __typename: "Mutation",
+              __typename: 'Mutation',
               createList: {
-                __typename: "List",
-                id: "temp",
+                __typename: 'List',
+                id: 'temp',
                 name: variables.name,
                 order: -1,
                 members: [
                   {
-                    __typename: "ListMember",
+                    __typename: 'ListMember',
                     is_admin: true,
-                    pending_acceptance: false,
-                    user
-                  }
+                    user,
+                  },
                 ],
-                todos: []
-              }
-            }
+                todos: [],
+              },
+            },
           }).catch((error) => console.error(error));
         })
       }

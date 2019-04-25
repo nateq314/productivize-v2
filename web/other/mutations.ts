@@ -1,4 +1,4 @@
-import { gql } from "apollo-boost";
+import { gql } from 'apollo-boost';
 
 export const LOGOUT = gql`
   mutation {
@@ -15,12 +15,7 @@ export const REGISTER = gql`
     $first_name: String!
     $last_name: String!
   ) {
-    register(
-      email: $email
-      password: $password
-      first_name: $first_name
-      last_name: $last_name
-    ) {
+    register(email: $email, password: $password, first_name: $first_name, last_name: $last_name) {
       success
       message
     }
@@ -35,7 +30,6 @@ export const CREATE_LIST = gql`
       order
       members {
         is_admin
-        pending_acceptance
         user {
           id
           email
@@ -43,6 +37,7 @@ export const CREATE_LIST = gql`
           last_name
         }
       }
+      pending_members
       todos {
         id
       }
@@ -60,19 +55,13 @@ export const DELETE_LIST = gql`
 `;
 
 export const UPDATE_LIST = gql`
-  mutation UpdateList(
-    $id: ID!
-    $name: String
-    $order: Int
-    $newMembers: [String!]
-  ) {
+  mutation UpdateList($id: ID!, $name: String, $order: Int, $newMembers: [String!]) {
     updateList(id: $id, name: $name, order: $order, newMembers: $newMembers) {
       id
       name
       order
       members {
         is_admin
-        pending_acceptance
         user {
           id
           email
@@ -80,6 +69,7 @@ export const UPDATE_LIST = gql`
           last_name
         }
       }
+      pending_members
       todos {
         id
         list_id
