@@ -1,4 +1,4 @@
-import gql from "graphql-tag";
+import gql from 'graphql-tag';
 
 const FETCH_LIST = gql`
   fragment containingList on List {
@@ -7,7 +7,6 @@ const FETCH_LIST = gql`
     order
     members {
       is_admin
-      pending_acceptance
       user {
         id
         email
@@ -15,6 +14,7 @@ const FETCH_LIST = gql`
         last_name
       }
     }
+    pending_members
     todos {
       id
       added_on
