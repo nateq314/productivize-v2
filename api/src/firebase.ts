@@ -1,19 +1,19 @@
-import * as firebaseAdmin from "firebase-admin";
-import { AuthError } from "./utils";
+import * as firebaseAdmin from 'firebase-admin';
+import { AuthError } from './utils';
 // tslint:disable-next-line:no-import-side-effect
-import "firebase/auth";
+import 'firebase/auth';
 
-const serviceAccount = require("../credentials.json");
+const serviceAccount = require('../credentials.json');
 
-const admin = firebaseAdmin.initializeApp({
+export const admin = firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(serviceAccount),
-  databaseURL: "https://focus-champion-231019.firebaseio.com"
+  databaseURL: 'https://focus-champion-231019.firebaseio.com',
 });
 
 // returns cookie token
 async function createUserSessionToken(
   args: any,
-  decodedIdToken?: firebaseAdmin.auth.DecodedIdToken
+  decodedIdToken?: firebaseAdmin.auth.DecodedIdToken,
 ) {
   // Get the ID token.
   const idToken = args.idToken.toString();
@@ -24,7 +24,7 @@ async function createUserSessionToken(
     decodedIdToken = await admin.auth().verifyIdToken(idToken);
   }
   if (!(new Date().getTime() / 1000 - decodedIdToken.auth_time < 5 * 60))
-    throw new AuthError({ message: "Recent sign-in required!" });
+    throw new AuthError({ message: 'Recent sign-in required!' });
 
   // Set session expiration to 14 days.
   const days = 14;
@@ -40,8 +40,8 @@ async function createUserSessionToken(
     .catch((error) => {
       console.error(error);
       throw new AuthError({
-        message: "User Session Token Creation Error",
-        stack: error
+        message: 'User Session Token Creation Error',
+        stack: error,
       });
     });
   return [sessionCookie, expiresIn] as [string, number];
@@ -52,13 +52,11 @@ async function verifyUserSessionToken(token: string) {
   // Verify session cookies tokens with firebase admin.
   // This is a low overhead operation.
   try {
-    const decodedClaims = await admin
-      .auth()
-      .verifySessionCookie(token, true /** checkRevoked */);
+    const decodedClaims = await admin.auth().verifySessionCookie(token, true /** checkRevoked */);
     return decodedClaims;
   } catch (error) {
     console.error(error);
-    throw new AuthError({ message: "User Session Token Verification Error" });
+    throw new AuthError({ message: 'User Session Token Verification Error' });
   }
 }
 
@@ -69,9 +67,11 @@ async function verifyIdToken(idToken: string) {
   } catch (error) {
     console.error(error);
     throw new AuthError({
-      message: `User Session Token Verification Error: ${error}`
+      message: `User Session Token Verification Error: ${error}`,
     });
   }
 }
 
+export const firestore = admin.firestore();
+export const listsCollRef = firestore.collection('lists');
 export { createUserSessionToken, verifyIdToken, verifyUserSessionToken };
