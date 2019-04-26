@@ -2,7 +2,8 @@
   "name": "functions",
   "scripts": {
     "lint": "tslint --project tsconfig.json",
-    "build": "tsc",
+    "build": "tsc && npm run copy",
+    "copy": "copyfiles -u 1 src/emails/**/* lib",
     "serve": "npm run build && firebase serve --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
@@ -18,6 +19,7 @@
     "apollo-server-express": "^2.4.4",
     "cookie-parser": "^1.4.4",
     "cors": "^2.8.5",
+    "email-templates": "^5.0.4",
     "express": "^4.16.4",
     "firebase": "^5.10.0",
     "firebase-admin": "^7.0.0",
@@ -26,13 +28,16 @@
     "graphql-iso-date": "^3.6.1",
     "graphql-type-json": "^0.2.4",
     "nodemailer": "^6.1.1",
-    "nodemailer-postmark-transport": "^2.1.1"
+    "nodemailer-postmark-transport": "^2.1.1",
+    "pug": "^2.0.3"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.1",
+    "@types/email-templates": "^3.5.1",
     "@types/firebase": "^3.2.1",
     "@types/graphql": "^14.0.7",
     "@types/nodemailer": "^4.6.7",
+    "copyfiles": "^2.1.0",
     "tslint": "^5.12.0",
     "typescript": "^3.2.2"
   },

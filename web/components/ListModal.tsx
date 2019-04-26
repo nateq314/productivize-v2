@@ -62,14 +62,15 @@ export default function ListModal({ createOrUpdateList, list, closeModal }: List
             }
           }}
         />
-        {members.map((member) => {
-          return (
-            <div key={member.user.id}>
-              {member.user.first_name} {member.user.last_name} ({member.user.email})
-              {member.is_admin ? ' (owner)' : ''}
-            </div>
-          );
-        })}
+        {members.map((member) => (
+          <div key={member.user.id}>
+            {member.user.first_name} {member.user.last_name} ({member.user.email})
+            {member.is_admin ? ' (owner)' : ''}
+          </div>
+        ))}
+        {pendingMembers.map((pendingMember) => (
+          <div key={pendingMember}>{pendingMember}</div>
+        ))}
         <button type="submit">Submit</button>
       </form>
     </Modal>

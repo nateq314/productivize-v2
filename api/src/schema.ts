@@ -67,6 +67,11 @@ export interface UserGQL extends auth.UserRecord {
   first_name: string;
   last_name: string;
   id: string;
+  disabled: boolean;
+  displayName?: string;
+  email?: string;
+  phoneNumber?: string;
+  photoURL?: string;
 }
 
 const schema = gql`

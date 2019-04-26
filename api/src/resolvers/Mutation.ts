@@ -1,8 +1,10 @@
+import EmailTemplate = require('email-templates');
 import * as fbAdmin from 'firebase-admin';
 import * as fbClient from 'firebase';
 import { ForbiddenError } from 'apollo-server-express';
 import * as express from 'express';
 import * as nodemailer from 'nodemailer';
+import * as path from 'path';
 import { Context } from '../apolloServer';
 import { verifyIdToken, createUserSessionToken, verifyUserSessionToken } from '../firebase';
 import {
@@ -19,6 +21,7 @@ import {
 import { pubsub, LIST_EVENTS } from './Subscription';
 
 const postmarkTransport = require('nodemailer-postmark-transport');
+// const EmailTemplate = require('email-templates');
 
 interface ILogin {
   idToken?: string;
@@ -71,7 +74,7 @@ export default {
         const authUserRecord = await fbAdmin.auth().getUser(current_uid);
         const userDocSnapshot = await tx.get(firestore.collection('users').doc(current_uid));
         const dbUserRecord = userDocSnapshot.data() as UserDB;
-        const user: UserGQL = {
+        const user: Partial<UserGQL> = {
           ...authUserRecord,
           ...dbUserRecord,
           id: userDocSnapshot.id,
@@ -141,7 +144,7 @@ export default {
             const authUserRecord = await fbAdmin.auth().getUser(current_uid);
             const userDocSnapshot = await tx.get(firestore.collection('users').doc(member_uid));
             const dbUserRecord = userDocSnapshot.data() as UserDB;
-            const user: UserGQL = {
+            const user: Partial<UserGQL> = {
               ...authUserRecord,
               ...dbUserRecord,
               id: userDocSnapshot.id,
@@ -288,21 +291,32 @@ export default {
           id: args.id,
         };
         if (filteredNewMembers.length > 0) {
-          // TODO: send a notification email to each address in filteredNewMembers
-          filteredNewMembers.forEach(async (newMemberEmail) => {
-            const mail = {
+          const mail = new EmailTemplate({
+            message: {
               from: 'info@productivize.net',
-              to: newMemberEmail,
-              subject: `Invitation to join list "${updatedListData.name}"`,
-              text: '__text_format_goes_here__',
-              html: '<h1>Hello Nathan</h1>',
-            };
-            try {
-              const result = await transport.sendMail(mail);
-              console.info(result);
-            } catch (error) {
-              console.error(error);
-            }
+            },
+            transport,
+          });
+          const currentUserAuthData = await fbAdmin.auth().getUser(current_uid);
+          const currentUserDBData = (await firestore
+            .collection('users')
+            .doc(current_uid)
+            .get()).data() as UserDB;
+          filteredNewMembers.forEach(async (newMemberEmail) => {
+            await mail.send({
+              template: path.join(__dirname, '..', 'emails', 'list-invite'),
+              message: {
+                to: newMemberEmail,
+              },
+              locals: {
+                inviter: {
+                  email: currentUserAuthData.email,
+                  first_name: currentUserDBData.first_name,
+                  last_name: currentUserDBData.last_name,
+                },
+                list_name: updatedListData.name,
+              },
+            });
           });
         }
         return updatedListData;
@@ -555,7 +569,7 @@ export default {
           .doc(uid)
           .get();
         const dbUserRecord = userDocSnapshot.data() as UserDB;
-        const user: UserGQL = {
+        const user: Partial<UserGQL> = {
           ...authUserRecord,
           ...dbUserRecord,
           id: uid,
