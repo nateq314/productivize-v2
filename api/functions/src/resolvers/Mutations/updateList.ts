@@ -73,13 +73,40 @@ export default async function updateList(
       const updates: Partial<ListDB> = {};
       if (name) updates.name = name;
       if (newMembers) {
-        // 1: add new members to the list
-        const currentMemberEmails = membersGQL.map((m) => m.user.email);
+        // 1: add new members to pending_members
+        const currentMemberEmails = membersGQL.map((m) => m.user.email as string);
         filteredNewMembers = newMembers.filter(
           (m) => !currentMemberEmails.includes(m) && !todoListData.pending_members.includes(m),
         );
-        if (filteredNewMembers.length > 0)
+        if (filteredNewMembers.length > 0) {
           updates.pending_members = todoListData.pending_members.concat(filteredNewMembers);
+          // 2: for each one that has a user record, add this list to [user].pending_lists
+          const dbUserDocSnapshots = await Promise.all(
+            filteredNewMembers.map(async (email) => {
+              try {
+                const authUserRecord = await fbAdmin.auth().getUserByEmail(email);
+                const dbUserDocSnapshot = await tx.get(
+                  firestore.collection('users').doc(authUserRecord.uid),
+                );
+                return dbUserDocSnapshot;
+              } catch (error) {
+                // no user record found for this email
+                return null;
+              }
+            }),
+          );
+          // TODO: handle list member deletion (both existing and pending)
+          dbUserDocSnapshots.forEach((userDocSnapshot) => {
+            if (userDocSnapshot) {
+              const existingPendingLists = (userDocSnapshot.data() as UserDB).pending_lists;
+              tx.set(
+                userDocSnapshot.ref,
+                { pending_lists: existingPendingLists.concat(todoListDocRef) },
+                { merge: true },
+              );
+            }
+          });
+        }
       }
       if (newOrder) {
         order = newOrder;
@@ -116,7 +143,7 @@ export default async function updateList(
           });
         }
       }
-      await tx.update(todoListDocRef, updates);
+      tx.update(todoListDocRef, updates);
       const updatedListData = {
         ...todoListData,
         ...updates,
@@ -126,6 +153,7 @@ export default async function updateList(
         id: args.id,
       };
       if (filteredNewMembers.length > 0) {
+        console.log('about ');
         const mail = new EmailTemplate({
           message: {
             from: 'info@productivize.net',
@@ -139,7 +167,7 @@ export default async function updateList(
           .get()).data() as UserDB;
         filteredNewMembers.forEach(async (newMemberEmail) => {
           await mail.send({
-            template: path.join(__dirname, '..', 'emails', 'list-invite'),
+            template: path.join(__dirname, '..', '..', 'emails', 'list-invite'),
             message: {
               to: newMemberEmail,
             },

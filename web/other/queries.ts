@@ -7,6 +7,7 @@ export const FETCH_CURRENT_USER = gql`
       email
       first_name
       last_name
+      pending_lists
     }
   }
 `;

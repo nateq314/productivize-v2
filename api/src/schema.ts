@@ -61,15 +61,17 @@ export interface TodoGQL {
 export interface UserDB {
   first_name: string;
   last_name: string;
+  pending_lists: any[];
 }
 
 export interface UserGQL extends auth.UserRecord {
-  first_name: string;
-  last_name: string;
-  id: string;
   disabled: boolean;
   displayName?: string;
   email?: string;
+  first_name: string;
+  id: string;
+  last_name: string;
+  pending_lists: string[];
   phoneNumber?: string;
   photoURL?: string;
 }
@@ -175,6 +177,7 @@ const schema = gql`
     email: String!
     first_name: String!
     last_name: String!
+    pending_lists: [String!]!
     phoneNumber: String
     photoURL: String
   }

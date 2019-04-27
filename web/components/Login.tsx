@@ -1,9 +1,9 @@
-import React, { useRef } from "react";
-import styled from "styled-components";
-import firebase, { auth } from "../other/firebase";
-import { Mutation, FetchResult } from "react-apollo";
-import gql from "graphql-tag";
-import * as Cookies from "cookies-js";
+import React, { useRef } from 'react';
+import styled from 'styled-components';
+import firebase, { auth } from '../other/firebase';
+import { Mutation, FetchResult } from 'react-apollo';
+import gql from 'graphql-tag';
+import * as Cookies from 'cookies-js';
 
 interface LoginResponse {
   error?: string;
@@ -21,6 +21,7 @@ export const LOGIN = `
         email
         first_name
         last_name
+        pending_lists
       }
     }
   }
@@ -42,43 +43,35 @@ function Login() {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                const {
-                  user
-                } = await firebase
+                const { user } = await firebase
                   .auth()
                   .signInWithEmailAndPassword(
                     (email.current as HTMLInputElement).value,
-                    (password.current as HTMLInputElement).value
+                    (password.current as HTMLInputElement).value,
                   );
                 // TODO: is login fail handled correctly here?
                 if (user) {
                   let idToken = await user.getIdToken();
                   // Only purpose of this call is to set the session cookie, not to get the user object
-                  let response: void | FetchResult<
-                    any,
-                    Record<string, any>,
-                    Record<string, any>
-                  >;
+                  let response: void | FetchResult<any, Record<string, any>, Record<string, any>>;
                   try {
                     response = await login({
-                      variables: { idToken }
+                      variables: { idToken },
                     });
                   } catch (error) {
                     const credential = auth.EmailAuthProvider.credential(
                       (email.current as HTMLInputElement).value,
-                      (password.current as HTMLInputElement).value
+                      (password.current as HTMLInputElement).value,
                     );
-                    const result = await user.reauthenticateWithCredential(
-                      credential
-                    );
-                    console.log("re-authentication result:", result);
+                    const result = await user.reauthenticateWithCredential(credential);
+                    console.log('re-authentication result:', result);
                     idToken = await user.getIdToken();
                     response = await login({
-                      variables: { idToken }
+                      variables: { idToken },
                     });
                   }
                   if (response) {
-                    console.log("response:", response);
+                    console.log('response:', response);
                     const { error } = response.data.login as LoginResponse;
                     if (error) {
                       console.error(error);
@@ -88,9 +81,9 @@ function Login() {
                       // Set a temporary cookie (expires in 1 sec), just enough for sth to be received by the server
                       // and used for login.
                       // TODO: look into other options ('secure', 'domain', etc.), see if any are applicable
-                      Cookies.set("tempToken", idToken, { expires: 1 });
+                      Cookies.set('tempToken', idToken, { expires: 1 });
                       // * Redirect to this page (login) with said cookie
-                      location.assign("/");
+                      location.assign('/');
                     }
                   }
                 }
