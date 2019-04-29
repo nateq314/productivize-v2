@@ -1,10 +1,9 @@
-import React, { useState } from "react";
-import firebase from "../other/firebase";
+import React, { useState } from 'react';
 
-import styled from "styled-components";
-import { Button } from "@material-ui/core";
-import { Mutation } from "react-apollo";
-import { REGISTER } from "../other/mutations";
+import styled from 'styled-components';
+import { Button } from '@material-ui/core';
+import { Mutation } from 'react-apollo';
+import { REGISTER } from '../other/mutations';
 
 const StyledRegister = styled.div`
   padding-top: 30px;
@@ -15,10 +14,10 @@ const StyledRegister = styled.div`
 `;
 
 export default function Register() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [registrationSubmitted, setRegistrationSubmitted] = useState(false);
 
   return (
@@ -34,14 +33,14 @@ export default function Register() {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                console.log("submitting form");
+                console.log('submitting form');
                 await register({
                   variables: {
                     email,
                     password,
                     first_name: firstName,
-                    last_name: lastName
-                  }
+                    last_name: lastName,
+                  },
                 });
                 setRegistrationSubmitted(true);
               }}

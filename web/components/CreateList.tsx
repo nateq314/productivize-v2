@@ -45,16 +45,12 @@ export default function CreateList({ children }: CreateListProps) {
               __typename: 'Mutation',
               createList: {
                 __typename: 'List',
+                admin: [user],
                 id: 'temp',
                 name: variables.name,
                 order: -1,
-                members: [
-                  {
-                    __typename: 'ListMember',
-                    is_admin: true,
-                    user,
-                  },
-                ],
+                members: [user],
+                pending_members: [],
                 todos: [],
               },
             },

@@ -7,7 +7,7 @@ export const FETCH_CURRENT_USER = gql`
       email
       first_name
       last_name
-      pending_lists
+      list_invitations
     }
   }
 `;
@@ -15,17 +15,17 @@ export const FETCH_CURRENT_USER = gql`
 export const FETCH_LISTS = gql`
   query {
     lists {
+      admin {
+        id
+      }
       id
       name
       order
       members {
-        is_admin
-        user {
-          id
-          email
-          first_name
-          last_name
-        }
+        id
+        email
+        first_name
+        last_name
       }
       pending_members
       todos {

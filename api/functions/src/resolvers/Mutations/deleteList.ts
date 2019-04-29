@@ -3,10 +3,11 @@ import * as fbAdmin from 'firebase-admin';
 import { Context } from '../../apolloServer';
 import { authorize } from './auth';
 import { firestore, listsCollRef } from '../../firebase';
-import { ListDB, ListGQL, UserGQL, UserDB } from '../../schema';
+import { ListDB } from '../../schema';
 import { pubsub, LIST_EVENTS } from '../Subscription';
 
 export default async function deleteList(parent: any, args: any, ctx: Context, info: any) {
+  console.log('RESOLVER deleteList()');
   authorize(ctx);
   try {
     const current_uid = (ctx.user as fbAdmin.auth.DecodedIdToken).uid;
@@ -20,22 +21,6 @@ export default async function deleteList(parent: any, args: any, ctx: Context, i
         // TODO: test this
         throw new ForbiddenError('You are not authorized to touch this list.');
       }
-      const membersGQL = await Promise.all(
-        deletedListData.members.map(async (member_uid) => {
-          const authUserRecord = await fbAdmin.auth().getUser(current_uid);
-          const userDocSnapshot = await tx.get(firestore.collection('users').doc(member_uid));
-          const dbUserRecord = userDocSnapshot.data() as UserDB;
-          const user: Partial<UserGQL> = {
-            ...authUserRecord,
-            ...dbUserRecord,
-            id: userDocSnapshot.id,
-          };
-          return {
-            ...deletedListData.member_info[member_uid],
-            user,
-          };
-        }),
-      );
       const higherOrderLists = await tx.get(
         listsCollRef.where(
           `member_info.${current_uid}.order`,
@@ -57,8 +42,12 @@ export default async function deleteList(parent: any, args: any, ctx: Context, i
       return {
         ...deletedListData,
         id: todoListDocRef.id,
-        members: membersGQL,
-      } as Partial<ListGQL>;
+        // delegate each of the below to List.___ resolvers:
+        //   admin
+        //   order
+        //   members
+        //   todos
+      } as ListDB & { id: string };
     });
     // ====== END TRANSACTION ===============================================
     console.log('listDeleted:', listDeleted);

@@ -22,17 +22,17 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
     listEvents {
       metadata
       listCreated {
+        admin {
+          id
+        }
         id
         name
         order
         members {
-          is_admin
-          user {
-            id
-            email
-            first_name
-            last_name
-          }
+          id
+          email
+          first_name
+          last_name
         }
         pending_members
         todos {
@@ -43,17 +43,17 @@ export const LIST_EVENTS_SUBSCRIPTION = gql`
         id
       }
       listUpdated {
+        admin {
+          id
+        }
         id
         name
         order
         members {
-          is_admin
-          user {
-            id
-            email
-            first_name
-            last_name
-          }
+          id
+          email
+          first_name
+          last_name
         }
         pending_members
       }

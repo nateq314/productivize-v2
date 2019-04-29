@@ -2,13 +2,7 @@ import { gql } from 'apollo-server-express';
 import { auth, firestore } from 'firebase-admin';
 
 export interface ListMemberInfoDB {
-  is_admin: boolean;
   order: number;
-}
-
-export interface ListMemberInfoGQL {
-  is_admin: boolean;
-  user: UserGQL;
 }
 
 type Opaque<K, T> = T & { __TYPE__: K };
@@ -16,6 +10,7 @@ export type Email = Opaque<'Email', string>;
 export type UID = Opaque<'UID', string>;
 
 export interface ListDB {
+  admin: string;
   name: string;
   members: UID[];
   member_info: {
@@ -25,11 +20,13 @@ export interface ListDB {
 }
 
 export interface ListGQL {
+  admin?: UserGQL;
   id: string;
-  members: ListMemberInfoGQL[];
+  members?: UserGQL[];
   name: string;
-  order: number;
-  todos: TodoGQL[];
+  order?: number;
+  pending_members: string[];
+  todos?: TodoGQL[];
 }
 
 export interface TodoDB {
@@ -61,17 +58,19 @@ export interface TodoGQL {
 export interface UserDB {
   first_name: string;
   last_name: string;
-  pending_lists: any[];
+  list_invitations: string[];
 }
 
-export interface UserGQL extends auth.UserRecord {
-  disabled: boolean;
+export type CombinedUserDB = UserDB & auth.UserRecord;
+
+export interface UserGQL {
+  disabled?: boolean;
   displayName?: string;
   email?: string;
-  first_name: string;
+  first_name?: string;
   id: string;
-  last_name: string;
-  pending_lists: string[];
+  last_name?: string;
+  list_invitations?: ListGQL[];
   phoneNumber?: string;
   photoURL?: string;
 }
@@ -80,21 +79,17 @@ const schema = gql`
   scalar DateTime
   scalar JSON
 
-  # GaphQL schema includes 'order' as a property of lists. Storing the order on
+  # GraphQL schema includes 'order' as a property of lists. Storing the order on
   # a per-member basis in the DB is an implementation detail. As far as FE is
   # concerned, it might as well be stored as a property of the list itself.
   type List {
+    admin: User!
     id: ID!
     name: String!
     order: Int!
     todos: [Todo!]!
-    members: [ListMember!]!
+    members: [User!]!
     pending_members: [String!]! # array of emails
-  }
-
-  type ListMember {
-    is_admin: Boolean!
-    user: User!
   }
 
   type ListMutationEvent {
@@ -177,7 +172,7 @@ const schema = gql`
     email: String!
     first_name: String!
     last_name: String!
-    pending_lists: [String!]!
+    list_invitations: [List!]!
     phoneNumber: String
     photoURL: String
   }

@@ -9,7 +9,7 @@ import {
   createUserSessionToken,
   verifyUserSessionToken,
 } from '../../firebase';
-import { UserGQL, UserDB } from '../../schema';
+import { UserGQL, UserDB, CombinedUserDB } from '../../schema';
 
 interface ILogin {
   idToken?: string;
@@ -17,6 +17,7 @@ interface ILogin {
 }
 
 export async function login(parent: any, args: ILogin, ctx: Context, info: any) {
+  console.log('RESOLVER login()');
   try {
     let decodedIdToken: fbAdmin.auth.DecodedIdToken;
     let user: Partial<UserGQL>;
@@ -50,6 +51,7 @@ export async function login(parent: any, args: ILogin, ctx: Context, info: any) 
 }
 
 export async function logout(parent: any, args: any, ctx: Context, info: any) {
+  console.log('RESOLVER logout()');
   const sessionCookie = ctx.req.cookies.session || '';
   if (sessionCookie) ctx.res.clearCookie('session');
   return {
@@ -58,12 +60,19 @@ export async function logout(parent: any, args: any, ctx: Context, info: any) {
 }
 
 export async function register(parent: any, args: any, ctx: Context, info: any) {
+  console.log('RESOLVER register()');
   try {
     const { email, password, first_name, last_name } = args;
     const userRecord = await fbAdmin.auth().createUser({
       email,
       password,
     });
+    const pendingListsQuerySnapshot = await listsCollRef
+      .where('pending_members', 'array-contains', email)
+      .get();
+    const list_invitations = pendingListsQuerySnapshot.empty
+      ? []
+      : pendingListsQuerySnapshot.docs.map((doc) => doc.ref);
     // let writeResult: FirebaseFirestore.WriteResult;
     /* writeResult = */ await firestore
       .collection('users')
@@ -72,6 +81,7 @@ export async function register(parent: any, args: any, ctx: Context, info: any) 
         email,
         first_name,
         last_name,
+        list_invitations,
       });
     /* writeResult = */ await listsCollRef.doc().create({
       name: 'MAIN',
@@ -119,10 +129,9 @@ async function getGraphQLUserObject(decodedIdToken: fbAdmin.auth.DecodedIdToken)
     .doc(uid)
     .get();
   const dbUserRecord = userDocSnapshot.data() as UserDB;
-  const user: Partial<UserGQL> = {
+  const user: CombinedUserDB = {
     ...authUserRecord,
     ...dbUserRecord,
-    id: uid,
   };
   return user;
 }

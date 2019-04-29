@@ -25,17 +25,17 @@ export const REGISTER = gql`
 export const CREATE_LIST = gql`
   mutation CreateList($name: String!) {
     createList(name: $name) {
+      admin {
+        id
+      }
       id
       name
       order
       members {
-        is_admin
-        user {
-          id
-          email
-          first_name
-          last_name
-        }
+        id
+        email
+        first_name
+        last_name
       }
       pending_members
       todos {
@@ -57,17 +57,17 @@ export const DELETE_LIST = gql`
 export const UPDATE_LIST = gql`
   mutation UpdateList($id: ID!, $name: String, $order: Int, $newMembers: [String!]) {
     updateList(id: $id, name: $name, order: $order, newMembers: $newMembers) {
+      admin {
+        id
+      }
       id
       name
       order
       members {
-        is_admin
-        user {
-          id
-          email
-          first_name
-          last_name
-        }
+        id
+        email
+        first_name
+        last_name
       }
       pending_members
       todos {

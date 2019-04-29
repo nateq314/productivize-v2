@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import Modal from './Modal';
-import { TodoList, ListMember } from './Main';
+import { TodoList } from './Main';
 import { ListVariables } from './UpdateList';
 import { UserContext, User } from '../pages/_app';
 
@@ -14,11 +14,12 @@ export default function ListModal({ createOrUpdateList, list, closeModal }: List
   const user = useContext(UserContext) as User;
   const [newListName, setNewListName] = useState(list ? list.name : '');
   const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [members, _setMembers] = useState<ListMember[]>(list ? list.members : []);
   const [pendingMembers, setPendingMembers] = useState<string[]>(
     list ? list.pending_members : [user.email],
   );
   const newListNameInput = useRef<HTMLInputElement>(null);
+  const members = list ? list.members : [];
+  const isAdmin = !!list && list.admin === user.id;
 
   useEffect(() => {
     (newListNameInput.current as HTMLInputElement).focus();
@@ -55,7 +56,7 @@ export default function ListModal({ createOrUpdateList, list, closeModal }: List
           onKeyUp={(e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
               // TODO: input validation
-              if (!members.map((m) => m.user.email).includes(newMemberEmail)) {
+              if (!members.map((m) => m.email).includes(newMemberEmail)) {
                 setPendingMembers(pendingMembers.concat(newMemberEmail));
                 setNewMemberEmail('');
               }
@@ -63,9 +64,8 @@ export default function ListModal({ createOrUpdateList, list, closeModal }: List
           }}
         />
         {members.map((member) => (
-          <div key={member.user.id}>
-            {member.user.first_name} {member.user.last_name} ({member.user.email})
-            {member.is_admin ? ' (owner)' : ''}
+          <div key={member.id}>
+            {member.first_name} {member.last_name} ({member.email}){isAdmin ? ' (owner)' : ''}
           </div>
         ))}
         {pendingMembers.map((pendingMember) => (

@@ -1,9 +1,9 @@
-import React, { useContext } from "react";
-import { Draggable } from "react-beautiful-dnd";
-import styled from "styled-components";
-import { TodoList, ListMember } from "../Main";
-import DeleteList from "../DeleteList";
-import { UserContext, User } from "../../pages/_app";
+import React, { useContext } from 'react';
+import { Draggable } from 'react-beautiful-dnd';
+import styled from 'styled-components';
+import { TodoList } from '../Main';
+import DeleteList from '../DeleteList';
+import { UserContext, User } from '../../pages/_app';
 
 const StyledListItem = styled.li`
   padding: 20px 0px;
@@ -53,7 +53,7 @@ export default function ListItem({
   setDraggingID,
   setSelectedListIds,
   toggleListSelectedStatus,
-  openUpdateListModal
+  openUpdateListModal,
 }: ListItemProps) {
   const user = useContext(UserContext) as User;
   let mouseXY = { x: 0, y: 0 };
@@ -64,11 +64,9 @@ export default function ListItem({
           {...provided.draggableProps}
           ref={provided.innerRef}
           className={
-            (active ? "active " : "") +
-            (isDragging || snapshot.isDragging ? "isDragging " : "")
+            (active ? 'active ' : '') + (isDragging || snapshot.isDragging ? 'isDragging ' : '')
           }
           onClick={(e: React.MouseEvent<HTMLLIElement>) => {
-            console.log("currentTarget:", e.currentTarget);
             const dx = e.screenX - mouseXY.x;
             const dy = e.screenY - mouseXY.y;
             if (dx <= 2 && dy <= 2) {
@@ -84,14 +82,13 @@ export default function ListItem({
             snapshot.isDropAnimating
               ? {
                   ...provided.draggableProps.style,
-                  transitionDuration: "0.01s"
+                  transitionDuration: '0.01s',
                 }
               : provided.draggableProps.style
           }
         >
           <span>{list.name}</span>
-          {(list.members.find((m) => m.user.id === user.id) as ListMember)
-            .is_admin && (
+          {list.admin.id === user.id && (
             <DeleteList list={list}>
               {(deleteList) => (
                 <span
@@ -100,7 +97,7 @@ export default function ListItem({
                     deleteList();
                   }}
                 >
-                  {" "}
+                  {' '}
                   Delete
                 </span>
               )}
@@ -112,7 +109,7 @@ export default function ListItem({
               openUpdateListModal(list);
             }}
           >
-            {" "}
+            {' '}
             Update
           </span>
           <span> {list.order}</span>

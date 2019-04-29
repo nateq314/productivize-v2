@@ -4,8 +4,8 @@ import { ForbiddenError } from 'apollo-server-express';
 import * as nodemailer from 'nodemailer';
 import * as path from 'path';
 import { Context } from '../../apolloServer';
-import { firestore, listsCollRef } from '../../firebase';
-import { ListDB, TodoDB, UserGQL, ListMemberInfoGQL, UserDB, Email, UID } from '../../schema';
+import { firestore, listsCollRef, auth } from '../../firebase';
+import { ListDB, UserDB, Email, UID } from '../../schema';
 import { pubsub, LIST_EVENTS } from '../Subscription';
 import { authorize } from './auth';
 
@@ -31,8 +31,9 @@ export default async function updateList(
   ctx: Context,
   info: any,
 ) {
+  console.log('RESOLVER updateList()');
   authorize(ctx);
-  let members: (Email | UID)[] = [];
+  let members: UID[] = [];
   let metadata = null;
   let filteredNewMembers: Email[] = [];
   try {
@@ -46,41 +47,27 @@ export default async function updateList(
         // TODO: test this
         throw new ForbiddenError('Not authorized to touch anything in this list.');
       }
-      let order = todoListData.member_info[current_uid].order;
-      const membersGQL: ListMemberInfoGQL[] = await Promise.all(
-        members.map(async (uid) => {
-          const authUserRecord = await fbAdmin.auth().getUser(uid);
-          const userDocSnapshot = await tx.get(firestore.collection('users').doc(uid));
-          const dbUserRecord = userDocSnapshot.data() as UserDB;
-          const user: UserGQL = {
-            ...authUserRecord,
-            ...dbUserRecord,
-            id: userDocSnapshot.id,
-          };
-          return {
-            ...todoListData.member_info[uid],
-            user,
-          };
-        }),
-      );
-      const todosQuerySnapshot = await tx.get(todoListDocRef.collection('todos'));
-      const todos = todosQuerySnapshot.docs.map((d) => ({
-        ...(d.data() as TodoDB),
-        id: d.id,
-        list_id: args.id,
-      }));
       const { name, order: newOrder, newMembers } = args;
       const updates: Partial<ListDB> = {};
+
+      /**
+       * NAME
+       */
       if (name) updates.name = name;
+
+      /**
+       * PENDING MEMBERS
+       */
       if (newMembers) {
         // 1: add new members to pending_members
-        const currentMemberEmails = membersGQL.map((m) => m.user.email as string);
+        const memberUserRecords = await Promise.all(members.map((uid) => auth.getUser(uid)));
+        const memberEmails = memberUserRecords.map((m) => m.email);
         filteredNewMembers = newMembers.filter(
-          (m) => !currentMemberEmails.includes(m) && !todoListData.pending_members.includes(m),
+          (m) => !memberEmails.includes(m) && !todoListData.pending_members.includes(m),
         );
         if (filteredNewMembers.length > 0) {
           updates.pending_members = todoListData.pending_members.concat(filteredNewMembers);
-          // 2: for each one that has a user record, add this list to [user].pending_lists
+          // 2: for each one that has a user record, add this list to [user].list_invitations
           const dbUserDocSnapshots = await Promise.all(
             filteredNewMembers.map(async (email) => {
               try {
@@ -98,18 +85,21 @@ export default async function updateList(
           // TODO: handle list member deletion (both existing and pending)
           dbUserDocSnapshots.forEach((userDocSnapshot) => {
             if (userDocSnapshot) {
-              const existingPendingLists = (userDocSnapshot.data() as UserDB).pending_lists;
+              const existingPendingLists = (userDocSnapshot.data() as UserDB).list_invitations;
               tx.set(
                 userDocSnapshot.ref,
-                { pending_lists: existingPendingLists.concat(todoListDocRef) },
+                { list_invitations: existingPendingLists.concat(args.id) },
                 { merge: true },
               );
             }
           });
         }
       }
+
+      /**
+       * ORDER
+       */
       if (newOrder) {
-        order = newOrder;
         updates.member_info = {
           [current_uid]: {
             ...todoListData.member_info[current_uid],
@@ -143,13 +133,14 @@ export default async function updateList(
           });
         }
       }
+
+      /**
+       * Do the update.
+       */
       tx.update(todoListDocRef, updates);
       const updatedListData = {
         ...todoListData,
         ...updates,
-        members: membersGQL,
-        todos,
-        order,
         id: args.id,
       };
       if (filteredNewMembers.length > 0) {
@@ -185,7 +176,6 @@ export default async function updateList(
       return updatedListData;
     });
     // ====== END TRANSACTION ===============================================
-    // TODO: handle addition of new members on FE
     pubsub.publish(LIST_EVENTS, {
       listUpdated,
       metadata,

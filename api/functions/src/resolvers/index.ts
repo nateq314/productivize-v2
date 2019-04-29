@@ -1,7 +1,9 @@
+import { firestore } from 'firebase-admin';
 import List from './List';
 import Mutation from './Mutations';
 import Query from './Query';
-import { firestore } from 'firebase-admin';
+import User from './User';
+
 const GraphQLJSON = require('graphql-type-json');
 const { GraphQLDateTime } = require('graphql-iso-date');
 
@@ -19,4 +21,5 @@ export default {
   List,
   Mutation,
   Query,
+  User,
 };

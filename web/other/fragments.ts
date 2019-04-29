@@ -2,17 +2,17 @@ import gql from 'graphql-tag';
 
 const FETCH_LIST = gql`
   fragment containingList on List {
+    admin {
+      id
+    }
     id
     name
     order
     members {
-      is_admin
-      user {
-        id
-        email
-        first_name
-        last_name
-      }
+      id
+      email
+      first_name
+      last_name
     }
     pending_members
     todos {

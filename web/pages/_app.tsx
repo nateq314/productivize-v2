@@ -1,16 +1,18 @@
-import { ApolloClient, NormalizedCacheObject } from "apollo-boost";
-import App, { AppProps, Container } from "next/app";
-import * as React from "react";
-import { ApolloProvider, Query } from "react-apollo";
-import GlobalStyles from "../components/GlobalStyles";
-import { FETCH_CURRENT_USER } from "../other/queries";
-import withApolloClient from "../other/with-apollo-client";
+import { ApolloClient, NormalizedCacheObject } from 'apollo-boost';
+import App, { AppProps, Container } from 'next/app';
+import * as React from 'react';
+import { ApolloProvider, Query } from 'react-apollo';
+import GlobalStyles from '../components/GlobalStyles';
+import { FETCH_CURRENT_USER } from '../other/queries';
+import withApolloClient from '../other/with-apollo-client';
+import { TodoList } from '../components/Main';
 
 export interface User {
   email: string;
   first_name: string;
-  last_name: string;
   id: string;
+  last_name: string;
+  list_invitations: TodoList[];
   // actually a lot more than this but for now this is all we want to deal with
 }
 

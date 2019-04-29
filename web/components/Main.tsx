@@ -20,16 +20,12 @@ export interface TodoListsQueryResult {
   lists: TodoList[];
 }
 
-export interface ListMember {
-  is_admin: boolean;
-  user: User;
-}
-
 export interface TodoList {
+  admin: User;
   id: string;
   name: string;
   order: number;
-  members: ListMember[];
+  members: User[];
   pending_members: string[];
   todos: Todo[];
 }

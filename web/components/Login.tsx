@@ -21,7 +21,16 @@ export const LOGIN = `
         email
         first_name
         last_name
-        pending_lists
+        list_invitations {
+          id
+          name
+          admin {
+            id
+            first_name
+            last_name
+            email
+          }
+        }
       }
     }
   }
