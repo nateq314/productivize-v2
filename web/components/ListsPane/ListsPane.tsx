@@ -1,18 +1,19 @@
-import React, { useMemo, useState } from "react";
-import styled from "styled-components";
-import { TodoList } from "../Main";
-import { DragDropContext } from "react-beautiful-dnd";
-import Lists from "./Lists";
-import { Mutation } from "react-apollo";
-import { UPDATE_LIST } from "../../other/mutations";
-import { FETCH_LISTS } from "../../other/queries";
+import React, { useMemo, useState } from 'react';
+import styled from 'styled-components';
+import { TodoList } from '../Main';
+import { DragDropContext } from 'react-beautiful-dnd';
+import Lists from './Lists';
+import { Mutation } from 'react-apollo';
+import { UPDATE_LIST } from '../../other/mutations';
+import { FETCH_LISTS } from '../../other/queries';
+import ListInvitations from './ListInvitations';
 
 const StyledListsPane = styled.section`
   grid-area: lists;
   border-right: 1px solid #333;
   display: grid;
-  grid-template-areas: "list" "add_new";
-  grid-template-rows: auto 50px;
+  grid-template-areas: 'invitations' 'list' 'add_new';
+  grid-template-rows: auto auto 50px;
   .add_new {
     border-top: 1px solid #333;
     grid-area: add_new;
@@ -33,13 +34,11 @@ export default function ListsPane({
   selectedListIds,
   setSelectedListIds,
   openNewListModal,
-  openUpdateListModal
+  openUpdateListModal,
 }: ListsPaneProps) {
   const [draggingID, setDraggingID] = useState<string | null>(null);
   const sortedLists = useMemo(() => {
-    return [...lists].sort((listA, listB) =>
-      listB.order > listA.order ? -1 : 1
-    );
+    return [...lists].sort((listA, listB) => (listB.order > listA.order ? -1 : 1));
   }, [lists]);
 
   return (
@@ -48,9 +47,7 @@ export default function ListsPane({
       update={(cache, { data }) => {
         if (data) {
           const { updateList } = data;
-          const prevOrder = (lists.find(
-            (list) => list.id === updateList.id
-          ) as TodoList).order;
+          const prevOrder = (lists.find((list) => list.id === updateList.id) as TodoList).order;
           const newOrder = updateList.order;
           cache.writeQuery({
             query: FETCH_LISTS,
@@ -63,7 +60,7 @@ export default function ListsPane({
                       else if (l.order <= newOrder && l.order > prevOrder) {
                         return {
                           ...l,
-                          order: l.order - 1
+                          order: l.order - 1,
                         };
                       } else return l;
                     })
@@ -73,17 +70,18 @@ export default function ListsPane({
                       else if (l.order >= newOrder && l.order < prevOrder) {
                         return {
                           ...l,
-                          order: l.order + 1
+                          order: l.order + 1,
                         };
                       } else return l;
-                    })
-            }
+                    }),
+            },
           });
         }
       }}
     >
       {(updateList) => (
         <StyledListsPane>
+          <ListInvitations />
           <DragDropContext
             // onDragStart={(start, provided) => {
             // }}
@@ -106,15 +104,15 @@ export default function ListsPane({
               updateList({
                 variables: {
                   id: draggableId,
-                  order: destination.index + 1
+                  order: destination.index + 1,
                 },
                 optimisticResponse: {
-                  __typename: "Mutation",
+                  __typename: 'Mutation',
                   updateList: {
                     ...list,
-                    order: destination.index + 1
-                  }
-                }
+                    order: destination.index + 1,
+                  },
+                },
               });
             }}
           >

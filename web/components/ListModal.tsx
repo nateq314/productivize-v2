@@ -19,7 +19,7 @@ export default function ListModal({ createOrUpdateList, list, closeModal }: List
   );
   const newListNameInput = useRef<HTMLInputElement>(null);
   const members = list ? list.members : [];
-  const isAdmin = !!list && list.admin === user.id;
+  const isAdmin = !!list && list.admin.id === user.id;
 
   useEffect(() => {
     (newListNameInput.current as HTMLInputElement).focus();
