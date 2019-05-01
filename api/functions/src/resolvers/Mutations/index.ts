@@ -5,6 +5,7 @@ import updateList from './updateList';
 import createTodo from './createTodo';
 import deleteTodo from './deleteTodo';
 import updateTodo from './updateTodo';
+import { acceptListInvitation, rejectListInvitation } from './listInvitations';
 import { login, logout, register } from './auth';
 
 type TodoDateFields = 'added_on' | 'completed_on' | 'deadline' | 'remind_on';
@@ -30,6 +31,8 @@ export default {
   createTodo,
   deleteTodo,
   updateTodo,
+  acceptListInvitation,
+  rejectListInvitation,
   login,
   logout,
   register,

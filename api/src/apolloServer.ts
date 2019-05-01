@@ -1,9 +1,9 @@
-import { ApolloServer } from "apollo-server-express";
-import * as express from "express";
-import * as fbAdmin from "firebase-admin";
-import { getUser } from "./utils";
-import typeDefs from "./schema";
-import resolvers from "./resolvers";
+import { ApolloServer } from 'apollo-server-express';
+import * as express from 'express';
+import * as fbAdmin from 'firebase-admin';
+import { getUser } from './utils';
+import typeDefs from './schema';
+import resolvers from './resolvers';
 
 export interface Context {
   req: express.Request;
@@ -20,7 +20,7 @@ const apolloServer = new ApolloServer({
     if (user) {
       user = {
         ...user,
-        id: user.uid
+        id: user.uid,
       };
     }
     return { req, res, user } as Context;
@@ -29,7 +29,7 @@ const apolloServer = new ApolloServer({
   // TODO: look up what these flags do
   introspection: true,
   playground: true,
-  debug: true
+  debug: true,
 });
 
 export default apolloServer;

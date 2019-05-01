@@ -59,6 +59,7 @@ export interface UserDB {
   first_name: string;
   last_name: string;
   list_invitations: string[];
+  lists: firestore.DocumentReference[];
 }
 
 export type CombinedUserDB = UserDB & auth.UserRecord;
@@ -93,6 +94,8 @@ const schema = gql`
   }
 
   type ListMutationEvent {
+    listInvitationAccepted: List
+    listInvitationRejected: List
     listCreated: List
     listDeleted: List
     listUpdated: List
@@ -108,9 +111,8 @@ const schema = gql`
   }
 
   type Mutation {
+    acceptListInvitation(list_id: String!): List!
     createList(name: String!): List!
-    deleteList(id: ID!): Result!
-    updateList(id: ID!, name: String, order: Int, newMembers: [String!]): List!
     createTodo(
       content: String!
       important: Boolean
@@ -119,7 +121,13 @@ const schema = gql`
       listId: String!
       remind_on: DateTime
     ): Todo!
+    deleteList(id: ID!): Result!
     deleteTodo(listId: String!, todoId: String!): Result!
+    login(idToken: String, session: String): LoginResult!
+    logout: LoginResult!
+    register(email: String!, password: String!, first_name: String!, last_name: String!): Result!
+    rejectListInvitation(list_id: String!): Result!
+    updateList(id: ID!, name: String, order: Int, newMembers: [String!]): List!
     updateTodo(
       listId: String!
       destListId: String
@@ -132,9 +140,6 @@ const schema = gql`
       order: Int
       remind_on: DateTime
     ): Todo!
-    login(idToken: String, session: String): LoginResult!
-    logout: LoginResult!
-    register(email: String!, password: String!, first_name: String!, last_name: String!): Result!
   }
 
   type Query {
@@ -149,6 +154,7 @@ const schema = gql`
 
   type Subscription {
     listEvents: ListMutationEvent!
+    userEvents: UserMutationEvent!
   }
 
   type Todo {
@@ -173,20 +179,15 @@ const schema = gql`
     first_name: String!
     last_name: String!
     list_invitations: [List!]!
+    list_memberships: [List!]!
     phoneNumber: String
     photoURL: String
   }
 
-  # This is not used currently. We only pull from firestore 'users' collection,
-  # in order to present consistent user data to the frontend.
-  type FBAuthUserRecord {
-    id: ID!
-    uid: String!
-    disabled: Boolean!
-    displayName: String
-    email: String!
-    phoneNumber: String
-    photoURL: String
+  type UserMutationEvent {
+    listInvitationAccepted: User
+    listInvitationRejected: User
+    metadata: JSON
   }
 `;
 
