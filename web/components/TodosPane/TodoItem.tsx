@@ -1,11 +1,11 @@
-import React from "react";
-import { Draggable } from "react-beautiful-dnd";
-import styled from "styled-components";
-import DeleteTodo from "../DeleteTodo";
-import { Todo, TodoList } from "../Main";
-import TodoContent from "../TodoContent";
-import Toggle from "../Toggle";
-import { DragState } from "./TodosPane";
+import React from 'react';
+import { Draggable } from 'react-beautiful-dnd';
+import styled from 'styled-components';
+import DeleteTodo from '../DeleteTodo';
+import { Todo, TodoList } from '../Main';
+import TodoContent from '../TodoContent';
+import Toggle from '../Toggle';
+import { DragState } from '.';
 
 const StyledTodoItem = styled.li`
   padding: 10px 0px;
@@ -58,7 +58,7 @@ export default function TodoItem({
   setDragState,
   setCurrEditing,
   setSelectedTodoId,
-  todo
+  todo,
 }: TodoItemProps) {
   return (
     <Draggable draggableId={todo.id} index={index}>
@@ -67,9 +67,9 @@ export default function TodoItem({
           {...provided.draggableProps}
           ref={provided.innerRef}
           className={
-            (isSelected ? `selected ` : "") +
-            (todo.important ? "important " : "") +
-            (isDragging || snapshot.isDragging ? "isDragging " : "")
+            (isSelected ? `selected ` : '') +
+            (todo.important ? 'important ' : '') +
+            (isDragging || snapshot.isDragging ? 'isDragging ' : '')
           }
           style={
             snapshot.isDropAnimating
@@ -77,25 +77,15 @@ export default function TodoItem({
                   ...provided.draggableProps.style,
                   // TODO: see if we can make this apply to everything except
                   // background-color
-                  transitionDuration: `0.01s`
+                  transitionDuration: `0.01s`,
                 }
               : provided.draggableProps.style
           }
         >
           <Toggle todo={todo} toggleFlag="completed">
-            {(toggle) => (
-              <input
-                type="checkbox"
-                checked={todo.completed}
-                onChange={toggle}
-              />
-            )}
+            {(toggle) => <input type="checkbox" checked={todo.completed} onChange={toggle} />}
           </Toggle>
-          <TodoContent
-            endEdit={() => setCurrEditing(null)}
-            isEditing={isEditing}
-            todo={todo}
-          />
+          <TodoContent endEdit={() => setCurrEditing(null)} isEditing={isEditing} todo={todo} />
           <DeleteTodo todo={todo}>
             {(deleteTodo) => <span onClick={deleteTodo}> Delete</span>}
           </DeleteTodo>
@@ -104,19 +94,19 @@ export default function TodoItem({
               setCurrEditing(isEditing ? null : todo.id);
             }}
           >
-            {isEditing ? " Cancel" : " Update"}
+            {isEditing ? ' Cancel' : ' Update'}
           </a>
           <a
             onClick={() => {
               setSelectedTodoId(isSelected ? null : todo.id);
             }}
           >
-            {isSelected ? " Deselect" : " Select"}
+            {isSelected ? ' Deselect' : ' Select'}
           </a>
           <Toggle todo={todo} toggleFlag="important">
             {(toggle) => (
               <a onClick={toggle} className="toggleImportant">
-                {" "}
+                {' '}
                 Important
               </a>
             )}
@@ -127,7 +117,7 @@ export default function TodoItem({
             className="dragHandle"
             onMouseDown={(e) => {
               setDragState({
-                draggableID: todo.id
+                draggableID: todo.id,
               });
               if (provided.dragHandleProps) {
                 provided.dragHandleProps.onMouseDown(e);
@@ -135,7 +125,7 @@ export default function TodoItem({
             }}
             onMouseUp={() =>
               setDragState({
-                draggableID: null
+                draggableID: null,
               })
             }
           />

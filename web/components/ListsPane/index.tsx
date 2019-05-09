@@ -12,11 +12,12 @@ const StyledListsPane = styled.section`
   grid-area: lists;
   border-right: 1px solid #333;
   display: grid;
-  grid-template-areas: 'invitations' 'list' 'add_new';
-  grid-template-rows: auto auto 50px;
-  .add_new {
+  grid-template-areas: 'main-content' 'add-new';
+  grid-template-rows: auto 50px;
+
+  .add-new {
     border-top: 1px solid #333;
-    grid-area: add_new;
+    grid-area: add-new;
     background-color: rgba(255, 255, 255, 0.05);
   }
 `;
@@ -81,51 +82,53 @@ export default function ListsPane({
     >
       {(updateList) => (
         <StyledListsPane>
-          <ListInvitations />
-          <DragDropContext
-            // onDragStart={(start, provided) => {
-            // }}
-            // onDragUpdate={(update, provided) => {
-            // }}
-            onDragEnd={(result) => {
-              const { destination, source, draggableId } = result;
-              const list = sortedLists[source.index];
-              setDraggingID(null);
-              if (!destination) return;
-              if (
-                destination.droppableId === source.droppableId &&
-                destination.index === source.index
-              ) {
-                // The user dragged the list item and then dropped it back in its
-                // original place. So no need to do anything.
-                return;
-              }
+          <div className="main-content">
+            <ListInvitations />
+            <DragDropContext
+              // onDragStart={(start, provided) => {
+              // }}
+              // onDragUpdate={(update, provided) => {
+              // }}
+              onDragEnd={(result) => {
+                const { destination, source, draggableId } = result;
+                const list = sortedLists[source.index];
+                setDraggingID(null);
+                if (!destination) return;
+                if (
+                  destination.droppableId === source.droppableId &&
+                  destination.index === source.index
+                ) {
+                  // The user dragged the list item and then dropped it back in its
+                  // original place. So no need to do anything.
+                  return;
+                }
 
-              updateList({
-                variables: {
-                  id: draggableId,
-                  order: destination.index + 1,
-                },
-                optimisticResponse: {
-                  __typename: 'Mutation',
-                  updateList: {
-                    ...list,
+                updateList({
+                  variables: {
+                    id: draggableId,
                     order: destination.index + 1,
                   },
-                },
-              });
-            }}
-          >
-            <Lists
-              draggingID={draggingID}
-              lists={sortedLists}
-              openUpdateListModal={openUpdateListModal}
-              selectedListIds={selectedListIds}
-              setDraggingID={setDraggingID}
-              setSelectedListIds={setSelectedListIds}
-            />
-          </DragDropContext>
-          <div className="add_new" onClick={openNewListModal}>
+                  optimisticResponse: {
+                    __typename: 'Mutation',
+                    updateList: {
+                      ...list,
+                      order: destination.index + 1,
+                    },
+                  },
+                });
+              }}
+            >
+              <Lists
+                draggingID={draggingID}
+                lists={sortedLists}
+                openUpdateListModal={openUpdateListModal}
+                selectedListIds={selectedListIds}
+                setDraggingID={setDraggingID}
+                setSelectedListIds={setSelectedListIds}
+              />
+            </DragDropContext>
+          </div>
+          <div className="add-new" onClick={openNewListModal}>
             Add New List
           </div>
         </StyledListsPane>

@@ -11,10 +11,10 @@ interface ListInvitationResponse {
 }
 
 export async function acceptListInvitation(
-  parent: any,
+  _parent: any,
   args: ListInvitationResponse,
   ctx: Context,
-  info: any,
+  _info: any,
 ) {
   console.log('RESOLVER acceptListInvitation()');
   authorize(ctx);

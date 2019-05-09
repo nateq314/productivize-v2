@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
-import styled from "styled-components";
-import { TodoList } from "./Main";
-import ListsPane from "./ListsPane/ListsPane";
-import TodosPane from "./TodosPane/TodosPane";
-import TodoDetails from "./TodoDetails";
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import { TodoList } from './Main';
+import ListsPane from './ListsPane';
+import TodosPane from './TodosPane';
+import TodoDetails from './TodoDetails';
 
 const StyledAppContent = styled.div`
   grid-area: app_content;
   display: grid;
   grid-template-columns: 25% 50% 25%;
-  grid-template-areas: "lists todos details";
+  grid-template-areas: 'lists todos details';
 `;
 
 interface AppContentProps {
@@ -20,12 +20,7 @@ interface AppContentProps {
 }
 
 export default function AppContent(props: AppContentProps) {
-  const {
-    lists,
-    subscribeToListEvents,
-    openNewListModal,
-    openUpdateListModal
-  } = props;
+  const { lists, subscribeToListEvents, openNewListModal, openUpdateListModal } = props;
   const [selectedListIds, setSelectedListIds] = useState([lists[0].id]);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   // filter out undefined lists, e.g. in the case where
@@ -57,10 +52,10 @@ export default function AppContent(props: AppContentProps) {
   // direct navigation to another url, because those don't involve unmounting the
   // component. So need to find an appropriate place to call this.
   useEffect(() => {
-    console.log("about to subscribe");
+    console.log('about to subscribe');
     const unsubscribe = subscribeToListEvents();
     return () => {
-      console.log("about to unsubscribe");
+      console.log('about to unsubscribe');
       unsubscribe();
     };
   }, []);

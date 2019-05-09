@@ -16,6 +16,14 @@ export default function ListInvitations() {
           {list.name}
           <br />
           from {list.admin.first_name} {list.admin.last_name}
+          <div className="actions">
+            <span className="reject" onClick={undefined}>
+              Reject
+            </span>
+            <span className="accept" onClick={undefined}>
+              Accept
+            </span>
+          </div>
         </div>
       ))}
     </StyledListInvitations>

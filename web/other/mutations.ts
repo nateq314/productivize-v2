@@ -164,3 +164,5 @@ export const UPDATE_TODO = gql`
     }
   }
 `;
+
+// export const ACCEPT_INVITATION = gql``;
