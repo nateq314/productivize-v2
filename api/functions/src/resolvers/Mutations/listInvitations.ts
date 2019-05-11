@@ -51,7 +51,7 @@ export async function acceptListInvitation(
             { merge: true },
           )
           // USER:
-          // 1) add list_id to user.lists
+          // 1) add list ref to user.lists
           // 2) remove the list invitation from user.list_invitations
           .set(
             userDocRef,
@@ -97,7 +97,65 @@ export async function rejectListInvitation(
   ctx: Context,
   info: any,
 ) {
-  console.log('RESOLVER acceptListInvitation()');
+  console.log('RESOLVER rejectListInvitation()');
   authorize(ctx);
-  // TODO: fill this in
+  const { email: current_email, uid: current_uid } = ctx.user as auth.DecodedIdToken & {
+    email: string;
+  };
+  const { list_id } = args;
+  try {
+    let rejectionIsValid = false;
+    const targetListDocRef = listsCollRef.doc(list_id);
+    await firestore.runTransaction(async (tx) => {
+      const userDocRef = usersCollRef.doc(current_uid);
+      const { list_invitations } = (await tx.get(userDocRef)).data() as UserDB;
+      if (list_invitations.includes(list_id)) {
+        rejectionIsValid = true;
+        const targetListData = (await tx.get(targetListDocRef)).data() as ListDB;
+        tx
+          // LIST: remove user.email from pending_members
+          .set(
+            targetListDocRef,
+            {
+              pending_members: targetListData.pending_members.filter(
+                (email) => email !== current_email,
+              ),
+            },
+            { merge: true },
+          )
+          // USER: remove the list invitation from user.list_invitations
+          .set(
+            userDocRef,
+            {
+              list_invitations: list_invitations.filter(
+                (invitedListID) => invitedListID !== list_id,
+              ),
+            },
+            { merge: true },
+          );
+      }
+    });
+    if (rejectionIsValid) {
+      const listInvitationRejected = (await targetListDocRef.get()).data() as ListDB;
+      // publish two separate events for USER and LIST
+      pubsub.publish(LIST_EVENTS, {
+        // TODO: handle on FE
+        listInvitationRejected,
+        // send to all members
+        members: listInvitationRejected.members,
+      });
+      pubsub.publish(USER_EVENTS, {
+        listInvitationRejected,
+        // only send to user who accepted the invitation
+        members: [current_uid],
+      });
+      return listInvitationRejected; // TODO: handle on FE
+    }
+    throw new ForbiddenError(
+      'Not able to find any invitation for the indicated list id.',
+    );
+  } catch (error) {
+    console.error(error);
+    throw new ApolloError(error.message);
+  }
 }
